@@ -6,6 +6,19 @@ description: >
   dependency analysis, scope-controlled execution with backup/rollback, and
   result aggregation. Requires explicit user approval before execution.
   Do NOT use for single-file fixes or new feature development.
+risk_level: high
+guard_rules:
+  - name: scope_guardian
+    required: true
+    parameters:
+      max_files: 10
+      allowed_extensions: [".py", ".md"]
+  - name: backup
+    required: true
+  - name: syntax_validation
+    required: true
+  - name: rollback
+    required: true
 tools:
   - name: dependency_analyzer
     script: "scripts/dependency_analyzer.py"
