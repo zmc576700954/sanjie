@@ -1,7 +1,7 @@
 {
-  "name": "celestial-court",
+  "name": "sanjie",
   "version": "1.0.0",
-  "description": "Celestial Court: A decentralized AI-Native Agent Cluster.",
+  "description": "三界 (Three Realms): A decentralized AI-Native Agent Cluster based on MCP.",
   "agents": [
     { "name": "yangjian", "path": "agents/yangjian.md" },
     { "name": "nezha", "path": "agents/nezha.md" },

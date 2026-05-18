@@ -12,7 +12,7 @@ from mcp.server.fastmcp import FastMCP
 from skills.tool_tianyan.scripts.logic_tracer import trace_error
 from skills.tool_tianyan.scripts.web_doc_fetcher import fetch_doc
 from skills.tool_tianyan.scripts.cross_verifier import verify_logic
-from skills.mcp_servers.utils import ensure_safe_path
+from skills.utils import ensure_safe_path
 
 mcp = FastMCP("TianYan Investigation Server")
 

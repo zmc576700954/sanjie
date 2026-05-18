@@ -1,44 +1,58 @@
 # Architecture Documentation
 
-This document describes the internal design of the agent-workflow framework. It is intended for contributors and developers extending the system.
+This document describes the internal design of the Sanjie (三界) framework. It is intended for contributors and developers extending the system.
+
+## Design Philosophy
+
+Sanjie follows a **MCP-First, Decentralized** architecture:
+
+- **No Central Orchestrator**: There is no `main.py` or central Python class managing agents. Each Agent and Skill is entirely decoupled.
+- **Host CLI Routing**: Claude Code, Gemini CLI, Cursor, or other AI IDE hosts load the appropriate agent based on metadata.
+- **Text-Based Handoff**: Agents communicate via structured markdown blocks (A2A protocol), not Python function calls.
 
 ## Core Abstractions
 
-Hierarchy (top-down): Agent → Skill → Tool
+### Agent (`agents/*.md`)
 
-### Tool (`src/core/tools/base.py`)
+An Agent is defined as a standalone Markdown persona file containing:
 
-- `Tool` (abstract): declares `name`, `description`, implements `execute(*args, **kwargs)`
-- `CallableTool`: wraps a Python function. Default choice for new tools.
-- `CliTool`: abstract base for shell commands, subclass implements `execute`.
+- **Personality & Role**: Judicial, strategic, or creative characterization.
+- **Core Directives**: Step-by-step workflows and decision trees.
+- **Celestial Protocol**: Exact tool invocation formats with few-shot examples.
+- **Forbidden Actions**: Explicit boundaries on what the agent must never do.
 
-### Skill (`src/core/skills/base.py`)
+Agents do not execute code directly. They produce structured text output that triggers tools via the host CLI.
 
-A Skill implements four members:
+### Skill (`skills/tool_*/`)
 
-| Member | Purpose |
-|--------|---------|
-| `name` | Key for SkillLibrary, logging |
-| `description` | One-line purpose for routing decisions |
-| `get_tools()` | Returns bound Tool list |
-| `match(task_description) -> float` | Task matching score [0.0, 1.0] |
+A Skill is a self-contained tool package with the following structure:
 
-### SkillLibrary (`src/core/skills/library.py`)
+```
+skills/tool_<name>/
+├── SKILL.md          # AI execution instructions and tool schema
+├── scripts/          # Deterministic Python scripts
+└── references/       # Optional on-demand reference material
+```
 
-- `register_skill` / `unregister_skill` / `get_skill` / `get_all_skills`
-- `match_skills(task, threshold)` returns scored list
-- Hot-pluggable: `register_skill` takes effect immediately at runtime
+Each Skill provides atomic capabilities (e.g., context compression, logic tracing, format auditing). Scripts must:
+- Accept clear CLI arguments or standard JSON input.
+- Return standard JSON or Markdown output.
+- Be ready for MCP server encapsulation.
 
-### Agent (`src/core/agent/base.py`)
+### MCP Server (`mcp-servers/*.py`)
 
-- `BaseAgent` implements `run(task, *args, **kwargs)`
-- Routes by `self.mode`: `AgentMode.STANDALONE` or `AgentMode.WORKFLOW_NODE`
-- Injects `SkillLibrary` at construction, provides `add_skill` / `remove_skill`
+MCP Servers wrap Skill scripts into standard MCP tools that can be consumed by any modern AI IDE.
 
-### Registry (`src/core/registry/`)
+Key standards:
+- Use `pydantic.Field` for exhaustive parameter descriptions.
+- Raise `mcp.shared.exceptions.McpError` with proper `ErrorData` codes.
+- Validate filesystem paths via `skills.utils.ensure_safe_path` to prevent traversal attacks.
 
-- `components.json`: plugin manifest `{name, version, description, module, class_name}`
-- `RegistryManager.install_component()`: dynamic import + instantiation via importlib
+### Utility (`skills/utils.py`)
+
+Shared cross-cutting utilities used by both Skills and MCP Servers:
+
+- `ensure_safe_path(filepath, workspace_root)`: Resolves and validates that a path is strictly within the workspace.
 
 ## Skill Risk Graduation
 
@@ -55,59 +69,58 @@ Skills are ordered by destructiveness, each with proportionally stronger safety 
 
 The reference agent enforces:
 
-1. Investigation first (tianyan) — produces handoff report
-2. Routing (bajiu-xuangong) — assesses difficulty, matches skill
-3. Execution — routed skill runs with appropriate guardrails
-4. WORKFLOW_NODE mode returns structured summary only, no side effects
-
-## Hot-Pluggable Skill Mechanism
-
-- Agent declares only inherent skills (tianyan for YangJian)
-- All other skills discovered from SkillLibrary at runtime
-- bajiu-xuangong scans library dynamically — no hardcoded skill list
-- New skills become available immediately after `register_skill()`
+1. **Investigation first** (tianyan) — produces handoff report
+2. **Routing** (bajiu-xuangong) — assesses difficulty, matches skill
+3. **Execution** — routed skill runs with appropriate guardrails
+4. **Structured output** — returns standardized markdown blocks only
 
 ## Directory Layout
 
 ```
-skills/                    Cross-platform skill packages
-├── <skill-name>/
-│   ├── SKILL.md           AI execution instructions (< 500 lines)
-│   ├── scripts/           Deterministic tool scripts
-│   └── references/        On-demand reference material
-
-platforms/                 Platform-specific agent definitions
-├── claude-code/agents/    .claude/agents/ format
-├── cursor/agents/         .cursor/agents/ format
-├── codex/                 Root AGENTS.md format
-└── trae/rules/            .trae/rules/ format
-
-src/core/                  Runtime engine
-├── agent/                 BaseAgent, YangJianAgent, SearchAgent
-├── skills/                Skill base, SkillLibrary, skill implementations
-├── tools/                 Tool base, standard tools
-├── registry/              Component registry
-└── workflow/              (reserved for workflow engine)
+/
+├── agents/                 # Agent persona definitions (Markdown)
+├── mcp-servers/            # MCP standard server implementations
+├── skills/                 # Atomic skill packages
+│   ├── utils.py            # Shared path security and utilities
+│   ├── tool_<name>/
+│   │   ├── SKILL.md
+│   │   ├── scripts/
+│   │   └── references/
+│   └── celestial_registry/ # Skill discovery and registry
+├── docs/                   # Documentation and memory index
+│   ├── architecture.md     # This file
+│   ├── MEMORY_INDEX.md     # Hot index of archived documents
+│   └── archive/            # Cold storage for archived docs
+├── config/                 # Configuration templates
+├── install.py              # Cross-platform installation helper
+├── plugin.json             # Claude Code plugin manifest
+├── pyproject.toml          # Python package metadata
+└── GEMINI.md               # Development protocol and discipline
 ```
 
 ## Adding a New Skill
 
-1. Create `skills/<name>/SKILL.md` with YAML frontmatter (name, description) + workflow steps
-2. Add scripts to `skills/<name>/scripts/`
-3. Optionally create runtime class in `src/core/skills/<name>/` inheriting from `Skill`
-4. Register in `src/core/registry/components.json`
-5. Add test in `tests/test_<name>_mechanisms.py`
+1. Create `skills/<name>/SKILL.md` with YAML frontmatter (name, description) + workflow steps.
+2. Add deterministic scripts to `skills/<name>/scripts/`.
+3. Optionally create an MCP server wrapper in `mcp-servers/<name>_server.py`.
+4. Add tests in `tests/test_<name>.py`.
 
-## Adding a New Agent
+## Adding a New MCP Server
 
-1. Inherit `BaseAgent`, implement `run()` handling both STANDALONE and WORKFLOW_NODE
-2. Inject inherent skills in constructor via `add_skill()`
-3. Create platform definitions in `platforms/*/`
-4. Register in `components.json`
+1. Create `mcp-servers/<name>_server.py` using `FastMCP`.
+2. Import skill scripts and wrap them as `@mcp.tool()` functions.
+3. Use `skills.utils.ensure_safe_path` for any filesystem access.
+4. Register the server in `plugin.json`.
+
+## Security Considerations
+
+- **Path Traversal**: All filesystem tools must validate paths via `ensure_safe_path`, which uses `os.path.commonpath` (safe on both Unix and Windows).
+- **URL Protocols**: Web fetchers must restrict to `http://` and `https://` only.
+- **Error Handling**: Tools must raise `McpError` with structured `ErrorData`, never return raw exception strings.
 
 ## Known Constraints
 
-- `bajiu_task_analyzer` uses keyword matching (will improve with LLM integration)
-- `taie_risk_assessor` / `kaishan_blast_assessor` block on `input()` without `auto_approve=True`
-- `kaishan_*` tools use `os.getcwd()` for log paths — cwd must be repo root
-- Windows: use `&` not `&&` for command chaining in shell
+- `bajiu_task_analyzer` uses keyword matching (will improve with LLM integration).
+- `taie_risk_assessor` / `kaishan_blast_assessor` block on `input()` without `auto_approve=True`.
+- `kaishan_*` tools use `os.getcwd()` for log paths — cwd must be repo root.
+- Windows: use `&` not `&&` for command chaining in shell.

@@ -5,9 +5,12 @@ import sys
 
 def fetch_doc(url: str) -> str:
     """
-    Attempts to fetch a web document. 
+    Attempts to fetch a web document.
     Returns the content or a standardized error code that triggers Agent fallbacks.
     """
+    if not url.startswith(('http://', 'https://')):
+        return "ERROR_INVALID_PROTOCOL: Only HTTP and HTTPS URLs are supported."
+
     req = urllib.request.Request(
         url, 
         headers={'User-Agent': 'TianYan-Agent-Fetcher/1.0'}

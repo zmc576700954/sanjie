@@ -1,6 +1,7 @@
 import re
 import argparse
 import json
+import sys
 
 class ContextCompressor:
     """
