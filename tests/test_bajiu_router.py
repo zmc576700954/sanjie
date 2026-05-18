@@ -7,6 +7,7 @@ if project_root not in sys.path:
 
 from skills.tool_bajiu.scripts.keyword_router import classify_error
 from skills.tool_bajiu.scripts.confidence_scorer import score_classification
+from skills.tool_bajiu.scripts.environment_probe import detect_host_environment
 
 
 def test_classify_none_error():
@@ -48,3 +49,12 @@ def test_high_confidence_single_match():
 def test_low_confidence_ambiguous():
     result = {"recommended_skill": "yindan"}
     assert score_classification(result, "something weird happened") == 0.5
+
+
+def test_detect_host_returns_structure():
+    env = detect_host_environment()
+    assert "host" in env
+    assert "has_ollama" in env
+    assert "has_api_key" in env
+    assert "available_providers" in env
+    assert env["host"] in ["claude_code", "cursor", "gemini_cli", "codex", "trae", "none"]
