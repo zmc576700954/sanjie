@@ -3,8 +3,10 @@ import os
 import ast
 import py_compile
 
+from skills.utils import ensure_safe_path
 
-def write_with_validation(filepath: str, content: str) -> str:
+
+def write_with_validation(filepath: str, content: str, workspace_root: str = None) -> str:
     """
     Write file content with syntax and AST regression checks.
     Rolls back on failure.
@@ -12,10 +14,13 @@ def write_with_validation(filepath: str, content: str) -> str:
     Args:
         filepath: Target file path
         content: New file content
+        workspace_root: Optional workspace root for path validation
 
     Returns:
         Success or failure message string
     """
+    if workspace_root is not None:
+        filepath = ensure_safe_path(filepath, workspace_root)
     # Backup original
     original_content = None
     if os.path.exists(filepath):

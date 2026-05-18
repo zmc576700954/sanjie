@@ -2,8 +2,10 @@
 import os
 import py_compile
 
+from skills.utils import ensure_safe_path
 
-def precise_replace(filepath: str, old_str: str, new_str: str) -> str:
+
+def precise_replace(filepath: str, old_str: str, new_str: str, workspace_root: str = None) -> str:
     """
     Replace exact text in file with validation and rollback.
 
@@ -11,10 +13,13 @@ def precise_replace(filepath: str, old_str: str, new_str: str) -> str:
         filepath: Target file path
         old_str: Exact text to find and replace
         new_str: Replacement text
+        workspace_root: Optional workspace root for path validation
 
     Returns:
         Success or failure message string
     """
+    if workspace_root is not None:
+        filepath = ensure_safe_path(filepath, workspace_root)
     if not os.path.exists(filepath):
         return f"Error: File {filepath} not found."
 

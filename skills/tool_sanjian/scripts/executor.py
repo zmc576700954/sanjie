@@ -3,8 +3,10 @@ import os
 import py_compile
 from typing import Optional
 
+from skills.utils import ensure_safe_path
 
-def execute_write(filepath: str, content: str, operation: str = "REWRITE", backup: bool = True) -> dict:
+
+def execute_write(filepath: str, content: str, operation: str = "REWRITE", backup: bool = True, workspace_root: str = None) -> dict:
     """
     Write content to file with backup and validation.
 
@@ -13,10 +15,13 @@ def execute_write(filepath: str, content: str, operation: str = "REWRITE", backu
         content: New file content
         operation: REWRITE / RESTRUCTURE / INTEGRATE
         backup: Whether to create backup
+        workspace_root: Optional workspace root for path validation
 
     Returns:
         {success, filepath, operation, backup_path, message}
     """
+    if workspace_root is not None:
+        filepath = ensure_safe_path(filepath, workspace_root)
     backup_path: Optional[str] = None
 
     # Backup original
