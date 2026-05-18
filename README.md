@@ -25,17 +25,18 @@ pip install mcp pydantic
 ### 2. 插件安装
 将 `agents/` 下的 Persona 文件与 `skills/` 下的 MCP 服务器包复制到宿主平台的对应配置目录下。
 
-### 3. IDE 挂载 (以 Claude Code/Cursor 为例)
-在您的 `mcp.json` 或平台配置文件中挂载三界宝库：
+## 项目结构
 
-```json
-{
-  "mcpServers": {
-    "yangjian-server": { "command": "python", "args": ["skills/mcp_servers/tianyan_server.py"] },
-    "taibai-server": { "command": "python", "args": ["skills/mcp_servers/taibai_server.py"] },
-    "wanglingguan-server": { "command": "python", "args": ["skills/mcp_servers/wanglingguan_server.py"] }
-  }
-}
+```text
+/
+├── agents/             # 智能体指令集 (Persona)，如杨戬、哪吒定义文件
+├── skills/             # 原子化工具定义与法宝库
+├── mcp-servers/        # MCP 标准服务实现，处理底层调用与逻辑
+├── config/             # 配置文件模板 (mcp_settings.json.example)
+├── docs/               # 文档归档区 (MEMORY_INDEX.md, archive/)
+├── GEMINI.md           # 天庭开发协议 (开发者的核心纪律)
+├── plugin.json         # Claude Code 插件注册清单
+└── install.py          # 自动化部署工具
 ```
 
 ## 贡献与纪律
