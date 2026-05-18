@@ -7,6 +7,7 @@ if project_root not in sys.path:
 
 from skills.celestial_registry.skill_manifest import parse_skill_manifest
 from skills.celestial_registry.generator import generate_mcp_server_code
+from skills.celestial_registry.loader import discover_skills, load_skill_tools
 
 
 def test_parse_tianyan_manifest():
@@ -28,3 +29,15 @@ def test_generate_mcp_server_for_tianyan():
     assert "mcp = FastMCP" in code
     assert "@mcp.tool()" in code
     assert 'if __name__ == "__main__":' in code
+
+
+def test_discover_skills():
+    skills_list = discover_skills()
+    assert "tianyan" in skills_list
+    assert "taibai" in skills_list
+
+
+def test_load_skill_tools():
+    tools = load_skill_tools("tianyan")
+    assert len(tools) >= 1
+    assert tools[0]["name"] == "logic_tracer"
