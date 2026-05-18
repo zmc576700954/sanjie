@@ -1,0 +1,27 @@
+{
+  "name": "celestial-court",
+  "version": "1.0.0",
+  "description": "Celestial Court: A decentralized AI-Native Agent Cluster.",
+  "agents": [
+    { "name": "yangjian", "path": "agents/yangjian.md" },
+    { "name": "nezha", "path": "agents/nezha.md" },
+    { "name": "taibai", "path": "agents/taibai.md" }
+  ],
+  "mcpServers": [
+    {
+      "name": "taibai-server",
+      "command": "python",
+      "args": ["mcp-servers/taibai_server.py"]
+    },
+    {
+      "name": "tianyan-server",
+      "command": "python",
+      "args": ["mcp-servers/tianyan_server.py"]
+    },
+    {
+      "name": "wanglingguan-server",
+      "command": "python",
+      "args": ["mcp-servers/wanglingguan_server.py"]
+    }
+  ]
+}

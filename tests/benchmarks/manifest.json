@@ -1,0 +1,11 @@
+{
+  "scenarios": {
+    "L2_dependency_drift": {
+      "level": 2,
+      "task": "Fix the signature generation bug in PaymentService.py caused by Werkzeug 3.0+ upgrade.",   
+      "target_file": "tests/benchmarks/level2_linkage/app/services.py",
+      "expected_fix": "Replace werkzeug.urls with urllib.parse",
+      "evaluator": "wanglingguan"
+    }
+  }
+}
