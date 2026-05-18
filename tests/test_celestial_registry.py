@@ -41,3 +41,14 @@ def test_load_skill_tools():
     tools = load_skill_tools("tianyan")
     assert len(tools) >= 1
     assert tools[0]["name"] == "logic_tracer"
+
+
+import json
+from skills.celestial_registry.plugin_writer import generate_plugin_json
+
+
+def test_generate_plugin_json():
+    plugin = generate_plugin_json()
+    assert plugin["name"] == "sanjie"
+    assert any(s["name"] == "taibai-server" for s in plugin.get("mcpServers", []))
+    assert plugin.get("autoDiscover") == True
