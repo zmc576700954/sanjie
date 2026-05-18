@@ -79,3 +79,20 @@ def test_get_available_provider_returns_none_when_nothing_configured():
     # This may be None or ollama depending on CI setup; test just validates structure
     if provider is not None:
         assert hasattr(provider, "infer")
+
+
+from skills.tool_bajiu.scripts.route_orchestrator import route
+
+
+def test_route_none_error_l1():
+    result = route("NoneType has no attribute 'foo'")
+    assert result["recommended_skill"] == "yindan"
+    assert result["confidence"] == "high"
+    assert result["tier"] == "L1"
+
+
+def test_route_unknown_error():
+    result = route("something weird happened xyz123")
+    assert result["recommended_skill"] == "yindan"
+    assert "reasoning" in result
+    assert result["tier"] in ["L1", "L3"]
