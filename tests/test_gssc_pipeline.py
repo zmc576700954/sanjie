@@ -6,6 +6,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from skills.tool_taibai.scripts.gather import gather_sources
+from skills.tool_taibai.scripts.select import select_content
 
 
 def test_gather_single_file(tmp_path):
@@ -24,3 +25,22 @@ def test_gather_directory_with_pattern(tmp_path):
     result = gather_sources([str(tmp_path)], patterns=["*.py"])
     assert len(result["sources"]) == 1
     assert result["sources"][0]["path"].endswith("a.py")
+
+
+def test_select_removes_conversation_filler():
+    raw = {
+        "sources": [
+            {
+                "path": "chat.log",
+                "type": "file",
+                "content_preview": "Let me check that for you.\nI think the issue is here.\nBased on my analysis, the bug is at line 42.",
+            }
+        ],
+        "total_size_bytes": 100,
+        "estimated_tokens": 20,
+    }
+    result = select_content(raw)
+    assert "Let me check" not in result["filtered_sources"][0]["content_preview"]
+    assert "Based on my analysis" not in result["filtered_sources"][0]["content_preview"]
+    assert "line 42" in result["filtered_sources"][0]["content_preview"]
+    assert result["removed_stats"]["noise_lines"] >= 2
