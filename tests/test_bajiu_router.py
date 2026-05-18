@@ -6,6 +6,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from skills.tool_bajiu.scripts.keyword_router import classify_error
+from skills.tool_bajiu.scripts.confidence_scorer import score_classification
 
 
 def test_classify_none_error():
@@ -37,3 +38,13 @@ def test_classify_unknown():
     result = classify_error("something weird happened")
     assert result["recommended_skill"] == "yindan"
     assert "Insufficient information" in result["root_cause"]
+
+
+def test_high_confidence_single_match():
+    result = {"recommended_skill": "yindan"}
+    assert score_classification(result, "NoneType error") >= 0.7
+
+
+def test_low_confidence_ambiguous():
+    result = {"recommended_skill": "yindan"}
+    assert score_classification(result, "something weird happened") == 0.5
