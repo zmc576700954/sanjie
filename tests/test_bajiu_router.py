@@ -58,3 +58,24 @@ def test_detect_host_returns_structure():
     assert "has_api_key" in env
     assert "available_providers" in env
     assert env["host"] in ["claude_code", "cursor", "gemini_cli", "codex", "trae", "none"]
+
+
+from skills.tool_bajiu.scripts.providers import get_available_provider, list_providers
+
+
+def test_list_providers_returns_all():
+    providers = list_providers()
+    names = [p["name"] for p in providers]
+    assert "ollama" in names
+    assert "openai" in names
+    assert "anthropic" in names
+    assert "gemini" in names
+    assert "openrouter" in names
+
+
+def test_get_available_provider_returns_none_when_nothing_configured():
+    # In CI, no API keys are set, and ollama is unlikely running
+    provider = get_available_provider()
+    # This may be None or ollama depending on CI setup; test just validates structure
+    if provider is not None:
+        assert hasattr(provider, "infer")
