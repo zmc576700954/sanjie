@@ -8,6 +8,7 @@ if project_root not in sys.path:
 from skills.tool_taibai.scripts.gather import gather_sources
 from skills.tool_taibai.scripts.select import select_content
 from skills.tool_taibai.scripts.structure import structure_document
+from skills.tool_taibai.scripts.gssc_pipeline import run_pipeline
 
 
 def test_gather_single_file(tmp_path):
@@ -61,3 +62,23 @@ def test_structure_spec_document():
     assert "Summary" in doc
     assert "Implementation" in doc
     assert "We decided to use async." in doc
+
+
+def test_run_pipeline_full(tmp_path):
+    test_file = tmp_path / "input.txt"
+    test_file.write_text("This is a test document for GSSC pipeline.", encoding="utf-8")
+    output_file = tmp_path / "output.md"
+
+    result = run_pipeline(
+        source_paths=[str(test_file)],
+        doc_type="spec",
+        output_path=str(output_file),
+    )
+
+    assert result["output_path"] == str(output_file)
+    assert result["original_tokens"] > 0
+    assert result["final_tokens"] > 0
+    assert output_file.exists()
+    content = output_file.read_text(encoding="utf-8")
+    assert content.startswith("---")
+    assert "Summary" in content
