@@ -7,6 +7,7 @@ if project_root not in sys.path:
 
 from skills.tool_taibai.scripts.gather import gather_sources
 from skills.tool_taibai.scripts.select import select_content
+from skills.tool_taibai.scripts.structure import structure_document
 
 
 def test_gather_single_file(tmp_path):
@@ -44,3 +45,19 @@ def test_select_removes_conversation_filler():
     assert "Based on my analysis" not in result["filtered_sources"][0]["content_preview"]
     assert "line 42" in result["filtered_sources"][0]["content_preview"]
     assert result["removed_stats"]["noise_lines"] >= 2
+
+
+def test_structure_spec_document():
+    selected = {
+        "filtered_sources": [
+            {"path": "design.md", "content_preview": "We decided to use async."}
+        ]
+    }
+    doc = structure_document(selected, doc_type="spec", author="taibai")
+    assert doc.startswith("---")
+    assert "title:" in doc
+    assert "status: active" in doc
+    assert "author: taibai" in doc
+    assert "Summary" in doc
+    assert "Implementation" in doc
+    assert "We decided to use async." in doc
