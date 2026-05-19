@@ -57,7 +57,7 @@ def archive_document(
         if success:
             return f"Successfully archived {filepath} under topic '{topic}'."
         else:
-             raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Failed to archive. Ensure the file exists."))
+            raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Failed to archive. Ensure the file exists."))
     except Exception as e:
          raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
 

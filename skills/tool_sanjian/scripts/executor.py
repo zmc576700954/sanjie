@@ -6,7 +6,7 @@ from typing import Optional
 from skills.utils import ensure_safe_path
 
 
-def execute_write(filepath: str, content: str, operation: str = "REWRITE", backup: bool = True, workspace_root: str = None) -> dict:
+def execute_write(filepath: str, content: str, operation: str = "REWRITE", backup: bool = True, workspace_root: str | None = None) -> dict:
     """
     Write content to file with backup and validation.
 

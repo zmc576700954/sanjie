@@ -25,9 +25,14 @@ def assess_risk(target_file: str, proposed_changes: str, auto_approve: bool = Fa
     if auto_approve:
         return {"approved": True, "report": report}
 
-    print(report)
-    user_input = input("Approve this modification? (y/n): ")
-    if user_input.lower().strip() == 'y':
-        return {"approved": True, "report": report}
-    else:
-        return {"approved": False, "report": report}
+    # In MCP environments, interactive input is not available.
+    # Return an explicit approval request for the client (IDE) to handle.
+    return {
+        "approved": False,
+        "report": report,
+        "approval_required": True,
+        "message": (
+            f"Risk assessment for {target_file} requires approval. "
+            f"Re-run with auto_approve=True to proceed."
+        ),
+    }

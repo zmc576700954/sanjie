@@ -1,13 +1,7 @@
-import os
-import sys
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from skills.celestial_registry.skill_manifest import parse_skill_manifest
 from skills.celestial_registry.generator import generate_mcp_server_code
 from skills.celestial_registry.loader import discover_skills, load_skill_tools
+from skills.celestial_registry.plugin_writer import generate_plugin_json
 
 
 def test_parse_tianyan_manifest():
@@ -42,9 +36,6 @@ def test_load_skill_tools():
     assert len(tools) >= 1
     assert tools[0]["name"] == "logic_tracer"
 
-
-import json
-from skills.celestial_registry.plugin_writer import generate_plugin_json
 
 
 def test_generate_plugin_json():

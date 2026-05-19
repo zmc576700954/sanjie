@@ -55,7 +55,7 @@ def _has_ollama() -> bool:
     try:
         with urlopen("http://localhost:11434/api/tags", timeout=1) as response:
             return response.status == 200
-    except (URLError, Exception):
+    except Exception:
         return False
 
 

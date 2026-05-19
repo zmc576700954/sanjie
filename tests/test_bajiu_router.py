@@ -1,10 +1,3 @@
-import os
-import sys
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from skills.tool_bajiu.scripts.keyword_router import classify_error
 from skills.tool_bajiu.scripts.confidence_scorer import score_classification
 from skills.tool_bajiu.scripts.environment_probe import detect_host_environment
@@ -95,4 +88,6 @@ def test_route_unknown_error():
     result = route("something weird happened xyz123")
     assert result["recommended_skill"] == "yindan"
     assert "reasoning" in result
-    assert result["tier"] in ["L1", "L3"]
+    # For completely unknown errors with no keyword match, only L3 fallback applies.
+    # L1 requires >=0.9 confidence and L2 requires an available LLM provider.
+    assert result["tier"] == "L3"

@@ -3,7 +3,7 @@ import yaml
 import json
 from typing import List, Dict
 
-def check_tools(skills_dir: str = None) -> str:
+def check_tools(skills_dir: str | None = None) -> str:
     """
     Scan the skills directory and extract tool metadata from SKILL.md files.
     

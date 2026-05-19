@@ -30,8 +30,18 @@ def verify_logic(local_logic: str, official_spec: str) -> str:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--local", required=True, help="Path to local logic summary file or string")
-    parser.add_argument("--spec", required=True, help="Path to official spec file or string")
+    parser.add_argument("--local", required=True, help="Path to local logic summary file, or the summary text itself")
+    parser.add_argument("--spec", required=True, help="Path to official spec file, or the spec text itself")
     args = parser.parse_args()
-    
-    print(verify_logic(args.local, args.spec))
+
+    # Accept either a file path (read content) or raw text string
+    local_content = args.local
+    spec_content = args.spec
+    if os.path.isfile(args.local):
+        with open(args.local, "r", encoding="utf-8") as f:
+            local_content = f.read()
+    if os.path.isfile(args.spec):
+        with open(args.spec, "r", encoding="utf-8") as f:
+            spec_content = f.read()
+
+    print(verify_logic(local_content, spec_content))

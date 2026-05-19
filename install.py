@@ -39,7 +39,7 @@ PLATFORM_TARGETS = {
 }
 
 
-def install_skills(platform: str, skill_name: str = None):
+def install_skills(platform: str, skill_name: str | None = None):
     """Install skills and agents to platform target directory."""
     config = PLATFORM_TARGETS[platform]
     skills_target = config["skills"]

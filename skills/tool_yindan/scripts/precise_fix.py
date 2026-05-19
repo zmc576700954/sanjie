@@ -5,7 +5,7 @@ import py_compile
 from skills.utils import ensure_safe_path
 
 
-def precise_replace(filepath: str, old_str: str, new_str: str, workspace_root: str = None) -> str:
+def precise_replace(filepath: str, old_str: str, new_str: str, workspace_root: str | None = None) -> str:
     """
     Replace exact text in file with validation and rollback.
 

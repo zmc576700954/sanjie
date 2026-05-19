@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(gh pr *)",
-      "Bash(xargs wc -l)"
+      "Bash(xargs wc -l)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash([ -f \"$d/SKILL.md\" ])",
+      "Bash(python -m pytest tests/ -q)"
     ]
   }
 }

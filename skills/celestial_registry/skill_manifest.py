@@ -3,6 +3,23 @@ import os
 import yaml
 
 
+# Shared type mapping from manifest type hints to Python types.
+# Used by auto_server.py (runtime) and generator.py (code generation).
+MANIFEST_TO_PY_TYPE = {
+    "string": str,
+    "str": str,
+    "integer": int,
+    "int": int,
+    "boolean": bool,
+    "bool": bool,
+    "float": float,
+    "number": float,
+    "path": str,
+}
+
+MANIFEST_TO_PY_TYPE_STR = {k: v.__name__ for k, v in MANIFEST_TO_PY_TYPE.items()}
+
+
 def parse_skill_manifest(skill_md_path: str) -> dict:
     """Parse YAML frontmatter from a Skill definition file.
 

@@ -23,21 +23,21 @@ def assess_blast_radius(directory: str, pattern: str, action_type: str = "DELETE
     affected_files: List[str] = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if re.match(pattern, file) or re.search(pattern, file):
+            if re.search(pattern, file):
                 affected_files.append(os.path.join(root, file))
 
     if auto_approve:
         return {"approved": True, "affected_files": affected_files}
 
-    print(f"Blast radius: {len(affected_files)} files match pattern '{pattern}' in {directory}")
-    print(f"Action: {action_type}")
-    for f in affected_files[:5]:
-        print(f"  - {f}")
-    if len(affected_files) > 5:
-        print(f"  ... and {len(affected_files) - 5} more")
-
-    user_input = input("Approve this bulk operation? (y/n): ")
-    if user_input.lower().strip() == 'y':
-        return {"approved": True, "affected_files": affected_files}
-    else:
-        return {"approved": False, "affected_files": []}
+    # In MCP environments, interactive input is not available.
+    # Return an explicit approval request for the client (IDE) to handle.
+    return {
+        "approved": False,
+        "affected_files": affected_files,
+        "approval_required": True,
+        "message": (
+            f"Blast radius: {len(affected_files)} files match pattern '{pattern}' in {directory}. "
+            f"Action: {action_type}. "
+            f"Re-run with auto_approve=True to proceed."
+        ),
+    }

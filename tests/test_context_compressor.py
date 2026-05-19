@@ -1,11 +1,3 @@
-import os
-import sys
-import json
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from skills.tool_taibai.scripts.context_compressor import ContextCompressor
 
 

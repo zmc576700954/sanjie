@@ -39,10 +39,12 @@ def parse_envelope_filename(filename: str) -> tuple[str, str] | None:
 
     parts_before_to, parts_after_to = name.split("_to_", 1)
 
-    # sender is the last segment before _to_
+    # Assume sender is the last segment before _to_
+    # (timestamp fields come first, so last segment is the agent name)
     sender = parts_before_to.split("_")[-1]
 
-    # recipient is the first segment after _to_
+    # Assume recipient is the first segment after _to_
+    # (uuid comes after, so first segment is the agent name)
     recipient = parts_after_to.split("_")[0]
 
     if not sender or not recipient:

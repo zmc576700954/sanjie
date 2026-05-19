@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from pydantic import Field
@@ -14,6 +15,7 @@ from skills.tool_tianyan.scripts.web_doc_fetcher import fetch_doc
 from skills.tool_tianyan.scripts.cross_verifier import verify_logic
 from skills.utils import ensure_safe_path
 
+logger = logging.getLogger(__name__)
 mcp = FastMCP("TianYan Investigation Server")
 
 @mcp.tool()
@@ -23,7 +25,7 @@ def logic_tracer(
     source_code_context: str = Field(default="", description="Optional string containing relevant source code snippets.")
 ) -> str:
     """Analyzes an error description and local source context to trace business logic."""
-    mcp.info("Tracing logic...")
+    logger.info("Tracing logic...")
     try:
         safe_log = ensure_safe_path(log_file) if log_file else None
         return trace_error(error_desc, safe_log, source_code_context)
@@ -38,7 +40,7 @@ def web_doc_fetcher(
     Fetches external documentation from a URL.
     Returns ERROR_AUTH_BLOCKED if an auth wall is hit.
     """
-    mcp.info(f"Fetching URL: {url}...")
+    logger.info("Fetching URL: %s...", url)
     try:
         return fetch_doc(url)
     except Exception as e:

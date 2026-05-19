@@ -3,7 +3,7 @@ from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData, INVALID_PARAMS
 
 
-def ensure_safe_path(filepath: str, workspace_root: str = None) -> str:
+def ensure_safe_path(filepath: str, workspace_root: str | None = None) -> str:
     """
     Resolves the absolute path and ensures it lies within the workspace root.
     Raises an McpError if the path is malicious or invalid.

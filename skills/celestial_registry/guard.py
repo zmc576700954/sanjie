@@ -30,7 +30,7 @@ class RiskGuard:
             invocation_context: Context dict passed to the skill invocation.
 
         Raises:
-            McpError: If any required guard rule fails.
+            McpError: If any required guard rule fails or manifest is missing.
         """
         skill_md_path = f"skills/tool_{skill_name}/SKILL.md"
         if not os.path.isfile(skill_md_path):
@@ -41,7 +41,13 @@ class RiskGuard:
 
         manifest = parse_skill_manifest(skill_md_path)
         if manifest is None:
-            return
+            # Fail-closed: missing manifest means we cannot validate safety rules
+            raise McpError(
+                ErrorData(
+                    code=INVALID_PARAMS,
+                    message=f"Cannot validate skill '{skill_name}': manifest not found.",
+                )
+            )
 
         guard_rules = manifest.get("guard_rules", [])
         for rule in guard_rules:

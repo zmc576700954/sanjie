@@ -1,6 +1,6 @@
 import os
 
-from skills.celestial_registry.skill_manifest import parse_skill_manifest
+from skills.celestial_registry.skill_manifest import parse_skill_manifest, MANIFEST_TO_PY_TYPE_STR
 
 
 def _to_camel_name(name: str) -> str:
@@ -48,14 +48,13 @@ def generate_mcp_server_code(skill_name: str) -> str:
     tools = manifest.get("tools", [])
     server_title = f"{_to_camel_name(skill_name)} Server"
 
-    # Collect imports for each tool
-    import_lines = []
     tool_functions = []
 
     for tool in tools:
         tool_name = tool["name"]
         script_path = tool["script"]
         parameters = tool.get("parameters", {})
+        tool_desc = tool.get("description", f"Auto-generated tool {tool_name}")
 
         # Derive module path and function name from script path
         # e.g. "scripts/logic_tracer.py" -> "skills.tool_tianyan.scripts.logic_tracer"
@@ -65,15 +64,23 @@ def generate_mcp_server_code(skill_name: str) -> str:
 
         # Build parameter signature with pydantic.Field descriptions
         param_defs = []
-        for param_name, param_desc in parameters.items():
-            # Guess type: if description hints at optional, use default
+        for param_name, param_def in parameters.items():
+            if isinstance(param_def, dict):
+                param_desc = param_def.get("description", "")
+                ptype = param_def.get("type", "string")
+            else:
+                param_desc = str(param_def)
+                ptype = "string"
+
+            py_type = MANIFEST_TO_PY_TYPE_STR.get(ptype, "str")
+
             if "optional" in param_desc.lower():
                 param_defs.append(
-                    f'    {param_name}: str = Field(default="", description="{param_desc}")'
+                    f'    {param_name}: {py_type} = Field(default="", description="{param_desc}")'
                 )
             else:
                 param_defs.append(
-                    f'    {param_name}: str = Field(description="{param_desc}")'
+                    f'    {param_name}: {py_type} = Field(description="{param_desc}")'
                 )
 
         param_signature = ",\n".join(param_defs)
@@ -87,7 +94,7 @@ def generate_mcp_server_code(skill_name: str) -> str:
         func_code = f'''
 @mcp.tool()
 def {tool_name}({param_signature}) -> str:
-    """{param_desc}"""
+    """{tool_desc}"""
     try:
         from {module_import} import {function_name}
         return {function_name}({call_args})
@@ -95,7 +102,6 @@ def {tool_name}({param_signature}) -> str:
         raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
 '''
         tool_functions.append(func_code)
-        import_lines.append(f"from {module_import} import {function_name}")
 
     # We don't need static imports because we import inside each function
     # But the spec says to import them, so let's keep it simple.

@@ -23,9 +23,9 @@
 ## 安装与集成指南
 
 ### 1. 环境准备
-确保您的系统中已安装 Python 3.8+，并安装核心运行时依赖：
+确保您的系统中已安装 Python 3.10+，并安装核心运行时依赖：
 ```bash
-pip install mcp pydantic
+pip install mcp pydantic pyyaml
 ```
 
 ### 2. 通过 Claude Code 安装 (插件模式)

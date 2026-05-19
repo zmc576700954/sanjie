@@ -1,11 +1,10 @@
 import os
 import json
 
-from skills.celestial_registry.loader import discover_skills
 from skills.celestial_registry.skill_manifest import parse_skill_manifest
 
 
-def generate_plugin_json(project_root: str = None) -> dict:
+def generate_plugin_json(project_root: str | None = None) -> dict:
     """Generate plugin.json from discovered agents and skills."""
     if project_root is None:
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -21,7 +20,6 @@ def generate_plugin_json(project_root: str = None) -> dict:
 
     # Discover tool skills (exclude agent skills and system components)
     skills_dir = os.path.join(project_root, "skills")
-    skill_names = discover_skills(skills_dir)
 
     # Filter: only include skills from tool_* directories, exclude celestial_registry
     filtered_names = []
@@ -67,7 +65,7 @@ def generate_plugin_json(project_root: str = None) -> dict:
     return plugin
 
 
-def write_plugin_json(project_root: str = None) -> None:
+def write_plugin_json(project_root: str | None = None) -> None:
     """Write generated plugin.json to the project root."""
     if project_root is None:
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

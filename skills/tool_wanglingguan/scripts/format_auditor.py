@@ -3,6 +3,11 @@ import re
 import json
 import os
 
+# Module-level compiled patterns for performance
+_YAML_FRONTMATTER_RE = re.compile(r'^---\n(.*?)\n---', re.DOTALL)
+_A2A_HANDOFF_RE = re.compile(r'```json\s+A2A_HANDOFF\s*(.*?)\s*```', re.DOTALL)
+
+
 def audit_content(content: str, check_type: str) -> dict:
     """
     Audits the content based on the requested check type.
@@ -16,8 +21,7 @@ def audit_content(content: str, check_type: str) -> dict:
 
     if check_type == 'document':
         # Check for YAML frontmatter
-        yaml_pattern = re.compile(r'^---\n(.*?)\n---', re.DOTALL)
-        match = yaml_pattern.match(content.lstrip())
+        match = _YAML_FRONTMATTER_RE.match(content.lstrip())
         
         if not match:
             report["status"] = "FAIL"
@@ -32,8 +36,7 @@ def audit_content(content: str, check_type: str) -> dict:
 
     elif check_type == 'handoff':
         # Check for A2A_HANDOFF JSON block
-        handoff_pattern = re.compile(r'```json\s+A2A_HANDOFF\s*(.*?)\s*```', re.DOTALL)
-        match = handoff_pattern.search(content)
+        match = _A2A_HANDOFF_RE.search(content)
         
         if not match:
             report["status"] = "FAIL"

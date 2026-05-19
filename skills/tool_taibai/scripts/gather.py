@@ -65,7 +65,9 @@ def gather_sources(paths: list[str], patterns: list[str] = None) -> dict:
                         "content_preview": _make_preview(content),
                     })
 
-    estimated_tokens = len(total_content.split())
+    # Heuristic token estimation: ~4 characters per token on average
+    # (works better than word count for mixed code/text/Chinese content)
+    estimated_tokens = max(1, len(total_content) // 4)
 
     return {
         "sources": sources,

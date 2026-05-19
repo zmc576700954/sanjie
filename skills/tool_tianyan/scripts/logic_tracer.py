@@ -20,10 +20,16 @@ def trace_error(error_desc: str, log_file: Optional[str] = None, source_code_con
     """
     sections = []
 
-    # Phase 1: Log analysis
+    # Phase 1: Log analysis — read last ~500 chars without loading entire file
     if log_file and os.path.exists(log_file):
         try:
             with open(log_file, "r", encoding="utf-8") as f:
+                file_size = f.seek(0, os.SEEK_END)
+                start = max(0, file_size - 1500)
+                f.seek(start)
+                # Discard potential partial first character
+                if start > 0:
+                    f.read(1)
                 log_tail = f.read()[-500:]
             sections.append(f"[log_excerpt]: ...{log_tail}")
         except Exception:

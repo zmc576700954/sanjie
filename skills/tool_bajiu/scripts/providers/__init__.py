@@ -45,7 +45,7 @@ def _get_host() -> str:
     return "none"
 
 
-def get_available_provider(force: str = None) -> Optional[ModelProvider]:
+def get_available_provider(force: Optional[str] = None) -> Optional[ModelProvider]:
     """Return first available provider. Priority: forced > host-native > any available."""
     if force:
         for cls in _ALL_PROVIDERS:
@@ -74,11 +74,12 @@ def get_available_provider(force: str = None) -> Optional[ModelProvider]:
 
 def list_providers() -> list[dict]:
     """List all providers with availability status."""
-    return [
-        {
-            "name": cls().name,
-            "available": cls().is_available(),
-            "native_hosts": cls().native_hosts,
-        }
-        for cls in _ALL_PROVIDERS
-    ]
+    result = []
+    for cls in _ALL_PROVIDERS:
+        provider = cls()
+        result.append({
+            "name": provider.name,
+            "available": provider.is_available(),
+            "native_hosts": provider.native_hosts,
+        })
+    return result

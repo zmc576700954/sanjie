@@ -14,7 +14,7 @@ def run_pipeline(
     source_paths: list[str],
     doc_type: str = "spec",
     aggressive_compress: bool = False,
-    output_path: str = None,
+    output_path: str | None = None,
     author: str = "taibai",
 ) -> dict:
     """
@@ -49,7 +49,9 @@ def run_pipeline(
             f.write(compressed)
 
     original_tokens = gathered["estimated_tokens"]
-    final_tokens = len(compressed.split())
+    # Heuristic token estimate: ~4 chars per token for English, ~1-2 for Chinese.
+    # Without tiktoken this is approximate; ratio trends remain accurate.
+    final_tokens = max(1, len(compressed) // 4)
     compression_ratio = round(original_tokens / max(final_tokens, 1), 2)
 
     return {

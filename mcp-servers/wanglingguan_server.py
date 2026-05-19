@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 from pydantic import Field
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData, INTERNAL_ERROR

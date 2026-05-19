@@ -37,16 +37,15 @@ def check_scope(subtask: dict, current_scope: str = "SAFE", auto_approve: bool =
             "action": "EXPAND",
         }
 
-    user_input = input(f"Scope expansion needed: {current_scope} -> {required_scope}. Approve? (y/n): ")
-    if user_input.lower().strip() == 'y':
-        return {
-            "approved": True,
-            "authorized_scope": required_scope,
-            "action": "EXPAND",
-        }
-    else:
-        return {
-            "approved": False,
-            "authorized_scope": current_scope,
-            "action": "HALT",
-        }
+    # In MCP environments, interactive input is not available.
+    # Return an explicit approval request for the client (IDE) to handle.
+    return {
+        "approved": False,
+        "authorized_scope": current_scope,
+        "action": "HALT",
+        "approval_required": True,
+        "message": (
+            f"Scope expansion needed: {current_scope} -> {required_scope}. "
+            f"Re-run with auto_approve=True to proceed."
+        ),
+    }

@@ -6,7 +6,7 @@ import py_compile
 from skills.utils import ensure_safe_path
 
 
-def write_with_validation(filepath: str, content: str, workspace_root: str = None) -> str:
+def write_with_validation(filepath: str, content: str, workspace_root: str | None = None) -> str:
     """
     Write file content with syntax and AST regression checks.
     Rolls back on failure.
@@ -39,9 +39,14 @@ def write_with_validation(filepath: str, content: str, workspace_root: str = Non
 
             tree = ast.parse(content)
             for node in ast.walk(tree):
-                # Block dangerous module imports
-                if isinstance(node, ast.ImportFrom) and node.module and "db_error_module" in node.module:
-                    raise ValueError("Dangerous module import detected: db_error_module")
+                # Block dangerous module imports (os, subprocess, eval patterns)
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    dangerous = {"os", "subprocess", "sys", "shlex"}
+                    if node.module in dangerous or any(node.module.startswith(d + ".") for d in dangerous):
+                        raise ValueError(f"Dangerous module import detected: {node.module}")
+                if isinstance(node, ast.Call):
+                    if isinstance(node.func, ast.Name) and node.func.id in {"eval", "exec", "compile"}:
+                        raise ValueError(f"Dangerous call detected: {node.func.id}")
                 # Block empty function implementations
                 if isinstance(node, ast.FunctionDef):
                     if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):

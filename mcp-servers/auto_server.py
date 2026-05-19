@@ -13,6 +13,7 @@ if project_root not in sys.path:
 
 from mcp.server.fastmcp import FastMCP
 from skills.celestial_registry.loader import discover_skills, load_skill_tools
+from skills.celestial_registry.skill_manifest import MANIFEST_TO_PY_TYPE
 from skills.utils import ensure_safe_path
 
 mcp = FastMCP("SanJie Auto-Discovery Server")
@@ -27,9 +28,10 @@ def _has_manual_server(skill_name: str) -> bool:
 
 
 def _looks_like_path(param_name: str) -> bool:
-    """Check if a parameter name suggests it is a file path."""
+    """Check if a parameter name suggests it is a file path.
+    Requires the keyword to be a suffix to reduce false positives (e.g. file_type)."""
     lowered = param_name.lower()
-    return any(keyword in lowered for keyword in ("path", "file", "dir"))
+    return lowered.endswith(("_path", "_file", "_dir", "path", "file", "dir"))
 
 
 def _resolve_script_function(skill_name: str, tool: dict):
@@ -91,13 +93,22 @@ def _build_tool_wrapper(skill_name: str, tool: dict, func):
     # Build pydantic Field annotations for the signature
     sig_params = []
     for pname in param_names:
-        pdesc = parameters[pname]
+        pdef = parameters[pname]
+        if isinstance(pdef, dict):
+            pdesc = pdef.get("description", "")
+            ptype_str = pdef.get("type", "string")
+        else:
+            pdesc = str(pdef)
+            ptype_str = "string"
+
+        annotation = MANIFEST_TO_PY_TYPE.get(ptype_str, str)
+
         sig_params.append(
             inspect.Parameter(
                 pname,
                 inspect.Parameter.KEYWORD_ONLY,
                 default=Field(description=pdesc),
-                annotation=str,
+                annotation=annotation,
             )
         )
 
@@ -126,7 +137,6 @@ def main():
         _register_skill_tools(skill_name)
 
 
-main()
-
 if __name__ == "__main__":
+    main()
     mcp.run()
