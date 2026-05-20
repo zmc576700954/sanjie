@@ -58,8 +58,11 @@ def generate_mcp_server_code(skill_name: str) -> str:
 
         # Derive module path and function name from script path
         # e.g. "scripts/logic_tracer.py" -> "skills.tool_tianyan.scripts.logic_tracer"
+        # Note: skill_name is the manifest name (e.g. "tianyan"), but the actual
+        # directory is always skills/tool_{name}/, so we prepend "tool_".
         script_module = script_path.replace("/", ".").replace("\\", ".").rstrip(".py")
-        module_import = f"skills.{skill_name}.{script_module}"
+        dir_name = f"tool_{skill_name}" if not skill_name.startswith("tool_") else skill_name
+        module_import = f"skills.{dir_name}.{script_module}"
         function_name = os.path.splitext(os.path.basename(script_path))[0]
 
         # Build parameter signature with pydantic.Field descriptions
@@ -116,7 +119,7 @@ from pydantic import Field
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData, INTERNAL_ERROR
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 

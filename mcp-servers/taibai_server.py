@@ -4,7 +4,7 @@ from pydantic import Field
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData, INTERNAL_ERROR
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -51,7 +51,7 @@ def archive_document(
     """
     try:
         safe_path = ensure_safe_path(filepath)
-        docs_root = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')), "docs")
+        docs_root = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), "docs")
         
         success = archive_file(safe_path, topic, summary, docs_root)
         if success:

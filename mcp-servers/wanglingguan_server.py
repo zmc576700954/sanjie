@@ -4,7 +4,7 @@ from pydantic import Field
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData, INTERNAL_ERROR
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -62,7 +62,7 @@ def audit_document(
 
 @mcp.tool()
 def audit_handoff(
-    filepath: str = Field(description="Absolute path to the agent output file to audit for JSON A2A_HANDOFF block.")
+    filepath: str = Field(description="Absolute path to the agent output file to audit for JSON A2A_ENVELOPE block.")
 ) -> str:
     """Audits a log or output file to ensure it complies with the A2A Text-Based Handoff Protocol."""
     return _read_and_audit(filepath, 'handoff')

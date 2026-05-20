@@ -19,13 +19,31 @@ class TestStandardWrite:
         assert "Error: Regression validation failed" in result
         assert test_file.read_text(encoding="utf-8") == original
 
-    def test_dangerous_import_blocked(self, tmp_path):
+    def test_dangerous_call_blocked_direct(self, tmp_path):
+        """import os + os.system() should be blocked (dangerous call)."""
         test_file = tmp_path / "test.py"
         result = write_with_validation(
-            str(test_file), "from os import system\n"
+            str(test_file), "import os\nos.system('echo test')\n"
         )
         assert "Error: Regression validation failed" in result
-        assert "Dangerous module import" in result
+        assert "Dangerous call detected" in result
+
+    def test_dangerous_call_blocked_import_from(self, tmp_path):
+        """from os import system + system() should be blocked."""
+        test_file = tmp_path / "test.py"
+        result = write_with_validation(
+            str(test_file), "from os import system\nsystem('echo test')\n"
+        )
+        assert "Error: Regression validation failed" in result
+        assert "Dangerous call detected" in result
+
+    def test_legitimate_import_passes(self, tmp_path):
+        """import os without dangerous calls should now PASS."""
+        test_file = tmp_path / "test.py"
+        result = write_with_validation(
+            str(test_file), "import os\nos.path.join('a', 'b')\n"
+        )
+        assert "Success" in result
 
     def test_empty_function_blocked(self, tmp_path):
         test_file = tmp_path / "test.py"

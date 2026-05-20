@@ -9,7 +9,7 @@ tools:
     script: "scripts/format_auditor.py"
     parameters:
       file: "Path to the file to audit."
-      type: "'document' (checks for YAML frontmatter) or 'handoff' (checks for A2A_HANDOFF json)."
+      type: "'document' (checks for YAML frontmatter) or 'handoff' (checks for A2A_ENVELOPE json)."
 ---
 
 # Compliance & Auditing
@@ -19,4 +19,4 @@ Use this tool to mechanically verify the output of other agents without relying 
 
 ## Available Audit Types:
 - **document**: Ensures the file starts with `---` and contains `title`, `date`, and `status`.
-- **handoff**: Ensures the file contains a ````json A2A_HANDOFF` block that parses as valid JSON and includes `target_agent`.
+- **handoff**: Ensures the file contains a ````json A2A_ENVELOPE` block that parses as valid JSON and includes `target_agent`.

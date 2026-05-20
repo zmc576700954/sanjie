@@ -42,7 +42,10 @@ def _resolve_script_function(skill_name: str, tool: dict):
 
     # script_path is like "scripts/logic_tracer.py"
     # Convert to module path: skills.tool_tianyan.scripts.logic_tracer
-    module_name = f"skills.{skill_name}.{script_path.replace('/', '.').replace('.py', '')}"
+    # Note: skill_name is the manifest name (e.g. "bajiu"), but the actual
+    # directory is always skills/tool_{name}/, so we prepend "tool_".
+    dir_name = f"tool_{skill_name}" if not skill_name.startswith("tool_") else skill_name
+    module_name = f"skills.{dir_name}.{script_path.replace('/', '.').replace('.py', '')}"
 
     try:
         module = importlib.import_module(module_name)

@@ -19,7 +19,7 @@ class TestFormatAuditor:
         assert result["status"] == "FAIL"
 
     def test_handoff_pass(self):
-        content = '```json A2A_HANDOFF\n{"target_agent": "nezha"}\n```'
+        content = '```json A2A_ENVELOPE\n{"target_agent": "nezha"}\n```'
         result = audit_content(content, "handoff")
         assert result["status"] == "PASS"
 
@@ -30,7 +30,7 @@ class TestFormatAuditor:
         assert "Missing" in result["errors"][0]
 
     def test_handoff_invalid_json(self):
-        content = '```json A2A_HANDOFF\n{invalid json}\n```'
+        content = '```json A2A_ENVELOPE\n{invalid json}\n```'
         result = audit_content(content, "handoff")
         assert result["status"] == "FAIL"
         assert "Invalid JSON" in result["errors"][0]

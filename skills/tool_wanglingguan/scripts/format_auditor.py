@@ -5,13 +5,13 @@ import os
 
 # Module-level compiled patterns for performance
 _YAML_FRONTMATTER_RE = re.compile(r'^---\n(.*?)\n---', re.DOTALL)
-_A2A_HANDOFF_RE = re.compile(r'```json\s+A2A_HANDOFF\s*(.*?)\s*```', re.DOTALL)
+_A2A_ENVELOPE_RE = re.compile(r'```json\s+A2A_ENVELOPE\s*(.*?)\s*```', re.DOTALL)
 
 
 def audit_content(content: str, check_type: str) -> dict:
     """
     Audits the content based on the requested check type.
-    check_type: 'document' (requires YAML frontmatter) or 'handoff' (requires A2A_HANDOFF block)
+    check_type: 'document' (requires YAML frontmatter) or 'handoff' (requires A2A_ENVELOPE block)
     Returns a dict with status and reasons.
     """
     report = {
@@ -35,12 +35,12 @@ def audit_content(content: str, check_type: str) -> dict:
                     report["errors"].append(f"Frontmatter missing required key: {key.replace(':', '')}")
 
     elif check_type == 'handoff':
-        # Check for A2A_HANDOFF JSON block
-        match = _A2A_HANDOFF_RE.search(content)
+        # Check for A2A_ENVELOPE JSON block
+        match = _A2A_ENVELOPE_RE.search(content)
         
         if not match:
             report["status"] = "FAIL"
-            report["errors"].append("Missing ```json A2A_HANDOFF block.")
+            report["errors"].append("Missing ```json A2A_ENVELOPE block.")
         else:
             json_str = match.group(1)
             try:
@@ -50,7 +50,7 @@ def audit_content(content: str, check_type: str) -> dict:
                     report["errors"].append("JSON missing required key: 'target_agent'.")
             except json.JSONDecodeError as e:
                 report["status"] = "FAIL"
-                report["errors"].append(f"Invalid JSON format in A2A_HANDOFF block: {e}")
+                report["errors"].append(f"Invalid JSON format in A2A_ENVELOPE block: {e}")
 
     else:
         report["status"] = "FAIL"

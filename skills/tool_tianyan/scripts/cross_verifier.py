@@ -29,6 +29,8 @@ def verify_logic(local_logic: str, official_spec: str) -> str:
     return report
 
 if __name__ == "__main__":
+    import os
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", required=True, help="Path to local logic summary file, or the summary text itself")
     parser.add_argument("--spec", required=True, help="Path to official spec file, or the spec text itself")

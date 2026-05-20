@@ -54,14 +54,14 @@ This document defines the core engineering standards and architectural philosoph
 - Agents MUST communicate across the decentralized cluster using a **Data Envelope** format.
 - When an agent suggests invoking another agent (e.g., YangJian calling Nezha), it MUST generate a standardized markdown block:
   ```markdown
-  ```json A2A_HANDOFF
+  ```json A2A_ENVELOPE
   {
     "target_agent": "nezha",
     "context_pointers": ["docs/MEMORY_INDEX.md"],
     "actionable_spec": "..."
   }
   ```
-- Receiving agents are instructed via their `<Celestial Protocol>` to prioritize reading data inside the `A2A_HANDOFF` block over user conversation.
+- Receiving agents are instructed via their `<Celestial Protocol>` to prioritize reading data inside the `A2A_ENVELOPE` block over user conversation.
 
 ## 7. Skill Evaluation & Quality Assurance
 **Anti-Pattern:** Developing tools and skills without verifiable metrics on how well the host CLI (Claude Code/Codex) handles the tool invocation.
