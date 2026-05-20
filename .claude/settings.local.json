@@ -6,7 +6,20 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash([ -f \"$d/SKILL.md\" ])",
-      "Bash(python -m pytest tests/ -q)"
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(curl -s \"https://api.github.com/search/issues?q=agent+capability+audit+boundary+analysis+security\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=agent+verification+checklist+mcp\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=llm+agent+security+audit+checklist\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['full_name'], r['stargazers_count'], r['html_url']\\) for r in d.get\\('items',[]\\)][:10]\")",
+      "Bash(curl -s \"https://api.github.com/search/issues?q=agent+hallucination+verification+fact+check\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['title'], r['html_url']\\) for r in d.get\\('items',[]\\)][:10]\")",
+      "Bash(curl -s \"https://api.github.com/search/repositories?q=agent+verification+layer+fact-check+mcp\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['full_name'], r['stargazers_count']\\) for r in d.get\\('items',[]\\)][:10]\")",
+      "Bash(curl -s \"https://api.github.com/search/issues?q=chain-of-verification+cove+agent+hallucination\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['title'], r['html_url']\\) for r in d.get\\('items',[]\\)][:8]\")",
+      "Bash(curl -s \"https://api.github.com/search/issues?q=CWE+null+pointer+exception+security+boundary+check\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['title'][:80], r['html_url']\\) for r in d.get\\('items',[]\\)][:8]\")",
+      "Bash(python *)"
     ]
   }
 }
