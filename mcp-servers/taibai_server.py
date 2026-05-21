@@ -11,6 +11,11 @@ if project_root not in sys.path:
 from mcp.server.fastmcp import FastMCP
 from skills.tool_taibai.scripts.archive_manager import archive_file
 from skills.tool_taibai.scripts.context_compressor import ContextCompressor
+from skills.tool_taibai.scripts.gather import gather_sources
+from skills.tool_taibai.scripts.select import select_content
+from skills.tool_taibai.scripts.structure import structure_document
+from skills.tool_taibai.scripts.gssc_pipeline import run_pipeline
+from skills.tool_taibai.scripts.review_request import request_review
 from skills.utils import ensure_safe_path
 
 mcp = FastMCP("Taibai Memory Manager")
@@ -60,6 +65,59 @@ def archive_document(
             raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"Failed to archive. Ensure the file exists."))
     except Exception as e:
          raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
+
+@mcp.tool()
+def gather_sources_tool(
+    source_paths: list[str] = Field(description="List of file or directory paths to collect."),
+    patterns: list[str] = Field(default=None, description="Optional list of glob patterns to match files within directories.")
+) -> dict:
+    """Gather source files and their metadata for context processing."""
+    return gather_sources(paths=source_paths, patterns=patterns)
+
+@mcp.tool()
+def select_content_tool(
+    raw_sources: dict = Field(description="Output dict from gather_sources, containing a 'sources' list."),
+    noise_patterns: list[str] = Field(default=None, description="Optional list of regex patterns to override default noise filters."),
+    keep_sections: list[str] = Field(default=None, description="Optional list of section names to preserve.")
+) -> dict:
+    """Filter out noise lines from gathered source content."""
+    return select_content(raw_sources=raw_sources, noise_patterns=noise_patterns, keep_sections=keep_sections)
+
+@mcp.tool()
+def structure_document_tool(
+    selected_sources: dict = Field(description="Output dict from select_content, containing 'filtered_sources'."),
+    doc_type: str = Field(default="spec", description="Document type: 'spec', 'archive', 'handoff', or 'memory'."),
+    author: str = Field(default="taibai", description="Author name to inject into YAML frontmatter."),
+    metadata: dict = Field(default=None, description="Optional dict of additional frontmatter fields.")
+) -> str:
+    """Structure a document with YAML frontmatter and Markdown sections."""
+    return structure_document(selected_sources=selected_sources, doc_type=doc_type, author=author, metadata=metadata)
+
+@mcp.tool()
+def run_gssc_pipeline_tool(
+    source_paths: list[str] = Field(description="List of file or directory paths to process."),
+    doc_type: str = Field(default="spec", description="Document type for structuring."),
+    aggressive_compress: bool = Field(default=False, description="Whether to enable aggressive compression."),
+    output_path: str = Field(default=None, description="Optional path to write the final compressed output."),
+    author: str = Field(default="taibai", description="Author name for frontmatter.")
+) -> dict:
+    """Run the full GSSC pipeline: Gather -> Select -> Structure -> Compress."""
+    return run_pipeline(
+        source_paths=source_paths,
+        doc_type=doc_type,
+        aggressive_compress=aggressive_compress,
+        output_path=output_path,
+        author=author,
+    )
+
+@mcp.tool()
+def request_review_tool(
+    document_path: str = Field(description="Path to the document to review."),
+    review_type: str = Field(default="format", description="Category of review: 'format', 'quality', 'assertion', or 'architecture'."),
+    context_notes: str = Field(default="", description="Optional additional context for the reviewer.")
+) -> dict:
+    """Submit a document for review. The scheduler assigns the review to a capable agent."""
+    return request_review(document_path=document_path, review_type=review_type, context_notes=context_notes)
 
 if __name__ == "__main__":
     mcp.run()

@@ -27,6 +27,12 @@ def archive_file(filepath: str, topic: str, summary: str, docs_root: str = "docs
     if os.path.exists(index_file):
         with open(index_file, "a", encoding="utf-8") as f:
             f.write(index_entry)
+    else:
+        with open(index_file, "w", encoding="utf-8") as f:
+            f.write("# Memory Index\n\n")
+            f.write("| Date | Topic | Summary | Path |\n")
+            f.write("|------|-------|---------|------|\n")
+            f.write(index_entry)
 
     return True
 
