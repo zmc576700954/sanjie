@@ -1,5 +1,6 @@
 """Nezha Demon Hunt — parallel investigation with Three Heads."""
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from skills.tool_bajiu.scripts.providers import get_available_provider
@@ -161,8 +162,40 @@ def _investigate_dual_head(target: str, mode: str, context: str, timestamp: str)
 
 
 def _investigate_trinity(target: str, mode: str, context: str, timestamp: str) -> str:
-    """Trinity investigation — placeholder for Task 4."""
-    return _investigate_single_head(target, mode, context, timestamp)
+    """Trinity investigation — three heads in parallel."""
+    # Launch business head and code head in parallel
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        business_future = executor.submit(
+            _call_ai,
+            _BUSINESS_PROMPT.format(target=target, context=context, mode=mode),
+            "Analyze from business perspective.",
+        )
+        code_future = executor.submit(
+            _call_ai,
+            _CODE_PROMPT.format(target=target, context=context, mode=mode),
+            "Analyze from code perspective.",
+        )
+        business_result = business_future.result()
+        code_result = code_future.result()
+
+    # Cognitive head synthesizes both results
+    cognitive_result = _call_ai(
+        _COGNITIVE_PROMPT.format(
+            target=target,
+            business_findings=json.dumps(business_result.get("findings", [])),
+            code_findings=json.dumps(code_result.get("findings", [])),
+        ),
+        "Synthesize findings and identify root cause.",
+    )
+
+    combined = {
+        "root_causes": cognitive_result.get("root_causes", []),
+        "business_risks": business_result.get("findings", []),
+        "code_risks": code_result.get("findings", []),
+        "suggested_fixes": cognitive_result.get("suggested_fixes", []),
+    }
+
+    return _format_report(combined, target, mode, timestamp, "trinity_six_arms")
 
 
 def _format_report(data: dict, target: str, mode: str, timestamp: str, execution_mode: str) -> str:

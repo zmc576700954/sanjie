@@ -97,3 +97,58 @@ class TestDemonHuntDualHead:
         assert "[business_risk]" in result
         assert "Business violation" in result
         assert mock_provider.infer.call_count == 2
+
+
+class TestDemonHuntTrinity:
+    @patch("skills.tool_nezha.scripts.demon_hunt.get_available_provider")
+    def test_trinity_calls_three_times(self, mock_get_provider):
+        mock_provider = MagicMock()
+        # 3 calls: business head, code head, cognitive head (synthesis)
+        mock_provider.infer.side_effect = [
+            '{"findings": [{"id": "B001", "severity": "high", "description": "Business rule violation", "scenario": "edge case"}]}',
+            '{"findings": [{"id": "C001", "severity": "critical", "category": "null_pointer", "description": "Null risk", "pattern": "missing check"}]}',
+            '{"root_causes": [{"id": "RC001", "confidence": "high", "description": "Root cause found", "evidence": "line 42", "surface_symptom": "crash", "true_nature": "missing validation"}], "suggested_fixes": [{"id": "SF001", "priority": "P0", "description": "Fix validation", "files_affected": ["core.py"]}]}',
+        ]
+        mock_get_provider.return_value = mock_provider
+
+        result = demon_hunt(
+            target="core.py",
+            mode="bug_hunt",
+            file_count=8,
+            line_change_est=400,
+            complexity="complex",
+            risk_level="high",
+        )
+
+        assert "[nezha_report]" in result
+        assert "trinity_six_arms" in result
+        assert "[business_risk]" in result
+        assert "[code_risk]" in result
+        assert "[root_cause]" in result
+        assert "Business rule violation" in result
+        assert "Null risk" in result
+        assert "Root cause found" in result
+        assert mock_provider.infer.call_count == 3
+
+    @patch("skills.tool_nezha.scripts.demon_hunt.get_available_provider")
+    def test_trinity_with_context(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_provider.infer.side_effect = [
+            '{"findings": []}',
+            '{"findings": []}',
+            '{"root_causes": [{"id": "RC001", "confidence": "medium", "description": "Context-driven root cause", "evidence": "YangJian report"}], "suggested_fixes": []}',
+        ]
+        mock_get_provider.return_value = mock_provider
+
+        result = demon_hunt(
+            target="service.py",
+            mode="bug_hunt",
+            context="YangJian report: possible race condition",
+            file_count=6,
+            line_change_est=300,
+            complexity="complex",
+            risk_level="critical",
+        )
+
+        assert "trinity_six_arms" in result
+        assert "Context-driven root cause" in result
