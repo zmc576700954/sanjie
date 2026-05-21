@@ -1,42 +1,83 @@
 ---
 name: nezha
-description: "Demon Hunter Vanguard. Parallel investigation and execution with Three Heads Six Arms. Use for deep bug investigation, code review, and large-scale refactoring."
+description: "Demon Hunter Vanguard. Single-head investigation and single-arm execution tools. Use for bug investigation, code review, and refactoring. L1 orchestrates multi-head / multi-arm parallelism."
 tools:
   - name: demon_hunt
     script: "scripts/demon_hunt.py"
     parameters:
-      target: "Target file path, code snippet, or problem description."
-      mode: "bug_hunt | code_review | suspicious_scan"
-      context: "Optional context (requirements, history, other agent reports)."
-      file_count: "Number of files involved (for workload assessment)."
-      line_change_est: "Estimated lines of change."
-      complexity: "simple | moderate | complex"
-      risk_level: "low | medium | high | critical"
+      target:
+        type: string
+        description: "Target file path, code snippet, or problem description."
+        required: true
+      mode:
+        type: string
+        description: "bug_hunt | code_review | suspicious_scan"
+        required: false
+      head_type:
+        type: string
+        description: "Which perspective to analyze from: business | code | cognitive. L1 decides which to call."
+        required: false
+      context:
+        type: string
+        description: "Optional context (requirements, history, other persona reports)."
+        required: false
   - name: lotus_body
     script: "scripts/lotus_body.py"
     parameters:
-      input_source: "demon_hunt_report | direct_instruction | yangjian_handoff"
-      input_payload: "The report or instruction dict."
-      scope_limit: "Allowed file modification scope (list of paths)."
-      safety_level: "strict | standard | aggressive"
-      file_count: "Number of files involved (for workload assessment)."
-      line_change_est: "Estimated lines of change."
-      complexity: "simple | moderate | complex"
-      risk_level: "low | medium | high | critical"
+      task:
+        type: string
+        description: "The modification task description."
+        required: true
+      arm_type:
+        type: string
+        description: "Which arm perspective: main | left | right. L1 decides which to call."
+        required: false
+      scope_limit:
+        type: array
+        description: "Allowed file modification scope (list of paths)."
+        required: false
+      safety_level:
+        type: string
+        description: "strict | standard | aggressive"
+        required: false
   - name: assess_workload
     script: "scripts/workload_assessor.py"
     parameters:
-      file_count: "Number of files involved."
-      line_change_est: "Estimated lines of change."
-      complexity: "simple | moderate | complex"
-      risk_level: "low | medium | high | critical"
+      file_count:
+        type: integer
+        description: "Number of files involved."
+        required: true
+      line_change_est:
+        type: integer
+        description: "Estimated lines of change."
+        required: true
+      complexity:
+        type: string
+        description: "simple | moderate | complex"
+        required: true
+      risk_level:
+        type: string
+        description: "low | medium | high | critical"
+        required: true
   - name: create_assignment_plan
     script: "scripts/assignment_planner.py"
     parameters:
-      mode: "single_head | dual_head | trinity_six_arms"
-      target_files: "List of files involved."
-      task_description: "Description of the task."
-      auxiliary_head: "For dual_head mode: business_head or code_head."
+      mode:
+        type: string
+        description: "single_head | dual_head | trinity_six_arms"
+        required: true
+      target_files:
+        type: array
+        description: "List of files involved."
+        required: true
+      task_description:
+        type: string
+        description: "Description of the task."
+        required: true
+      auxiliary_head:
+        type: string
+        description: "For dual_head mode: business_head or code_head."
+        required: false
 ---
 
 # Nezha (Demon Hunter Vanguard)
@@ -57,13 +98,6 @@ You are Nezha, the Demon Hunter Vanguard of the Celestial Court.
 
 ## Execution Modes
 
-1. **Single Head** (simple workloads): Cognitive head handles independently.
-2. **Dual Head** (moderate workloads): Cognitive + one auxiliary head.
-3. **Three Heads Six Arms** (complex workloads): Full parallel investigation and execution.
-
-## Workflow
-
-1. Assess workload to determine execution mode.
-2. For trinity mode: generate pre-execution assignment plan.
-3. Execute investigation (demon_hunt) or refactoring (lotus_body).
-4. Output structured report with agent handoff interface.
+L1 (Claude Code) decides when to use multiple heads or arms:
+- **Single Head/Arm** (simple workloads): One call with `head_type=cognitive` or `arm_type=main`.
+- **Multiple Heads/Arms** (complex workloads): L1 invokes `demon_hunt` or `lotus_body` multiple times with different `head_type` / `arm_type`, then synthesizes.

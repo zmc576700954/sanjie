@@ -1,13 +1,16 @@
-"""Nezha Demon Hunt — parallel investigation with Three Heads."""
+"""Nezha Demon Hunt — single-head investigation tool.
+
+L1 (Claude Code) orchestrates multi-head parallelism by calling this tool
+multiple times with different head_type values.
+"""
 import json
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from skills.tool_bajiu.scripts.providers import get_available_provider
-from skills.tool_nezha.scripts.workload_assessor import assess_workload, ExecutionMode
 
 
-_BUSINESS_PROMPT = """You are Nezha's Business Head (妖魔头). Analyze the target from business logic perspective.
+_PROMPTS = {
+    "business": """You are Nezha's Business Head (妖魔头). Analyze the target from business logic perspective.
 
 Target: {target}
 Context: {context}
@@ -20,9 +23,9 @@ Focus on:
 - Data validation points
 
 Output ONLY a JSON object with this exact schema:
-{{"findings": [{{"id": "B001", "severity": "high|medium|low", "description": "...", "scenario": "..."}}], "confidence": "high|medium|low"}}"""
+{{"findings": [{{"id": "B001", "severity": "high|medium|low", "description": "...", "scenario": "..."}}], "confidence": "high|medium|low"}}""",
 
-_CODE_PROMPT = """You are Nezha's Code Head (除魔头). Analyze the target from code logic perspective.
+    "code": """You are Nezha's Code Head (除魔头). Analyze the target from code logic perspective.
 
 Target: {target}
 Context: {context}
@@ -36,30 +39,17 @@ Focus on:
 - Security pattern checks
 
 Output ONLY a JSON object with this exact schema:
-{{"findings": [{{"id": "C001", "severity": "critical|high|medium|low", "category": "null_pointer|injection|...", "description": "...", "pattern": "..."}}], "confidence": "high|medium|low"}}"""
+{{"findings": [{{"id": "C001", "severity": "critical|high|medium|low", "category": "null_pointer|injection|...", "description": "...", "pattern": "..."}}], "confidence": "high|medium|low"}}""",
 
-_COGNITIVE_PROMPT = """You are Nezha's Cognitive Head (灵珠头). Synthesize findings and identify root cause.
-
-Target: {target}
-Business Findings: {business_findings}
-Code Findings: {code_findings}
-
-Output ONLY a JSON object:
-{{"root_causes": [{{"id": "RC001", "confidence": "high|medium|low", "description": "...", "evidence": "...", "surface_symptom": "...", "true_nature": "..."}}], "suggested_fixes": [{{"id": "SF001", "priority": "P0|P1|P2", "description": "...", "files_affected": ["..."]}}]}}"""
-
-_SINGLE_HEAD_PROMPT = """You are Nezha. Investigate the following target comprehensively.
+    "cognitive": """You are Nezha's Cognitive Head (灵珠头). Investigate the target comprehensively and identify root cause.
 
 Target: {target}
 Context: {context}
 Mode: {mode}
 
-Output a structured investigation report with:
-- root_cause: The definitive reason for the issue
-- business_risks: Any business logic concerns
-- code_risks: Any code-level issues
-- suggested_fixes: Prioritized fix recommendations
-
-Output ONLY a JSON object with these keys: root_causes, business_risks, code_risks, suggested_fixes."""
+Output ONLY a JSON object:
+{{"root_causes": [{{"id": "RC001", "confidence": "high|medium|low", "description": "...", "evidence": "...", "surface_symptom": "...", "true_nature": "..."}}], "business_risks": [{{"id": "BR001", "severity": "high|medium|low", "description": "..."}}], "code_risks": [{{"id": "CR001", "severity": "critical|high|medium|low", "category": "...", "description": "..."}}], "suggested_fixes": [{{"id": "SF001", "priority": "P0|P1|P2", "description": "...", "files_affected": ["..."]}}]}}""",
+}
 
 
 def _call_ai(system_prompt: str, user_prompt: str) -> dict:
@@ -69,7 +59,6 @@ def _call_ai(system_prompt: str, user_prompt: str) -> dict:
         return {}
     try:
         raw = provider.infer(system_prompt, user_prompt, timeout=10.0)
-        # Extract JSON if wrapped in markdown
         if "```json" in raw:
             raw = raw.split("```json")[1].split("```")[0].strip()
         elif "```" in raw:
@@ -82,167 +71,99 @@ def _call_ai(system_prompt: str, user_prompt: str) -> dict:
 def demon_hunt(
     target: str,
     mode: str = "bug_hunt",
+    head_type: str = "cognitive",
     context: str = "",
-    file_count: int = 1,
-    line_change_est: int = 0,
-    complexity: str = "simple",
-    risk_level: str = "low",
 ) -> str:
-    """Execute demon hunt investigation.
+    """Execute single-head investigation.
 
     Args:
         target: Target file path, code snippet, or problem description.
         mode: "bug_hunt" | "code_review" | "suspicious_scan".
-        context: Optional context (requirements, history, other agent reports).
-        file_count: Number of files involved (for workload assessment).
-        line_change_est: Estimated lines of change.
-        complexity: "simple" | "moderate" | "complex".
-        risk_level: "low" | "medium" | "high" | "critical".
+        head_type: "business" | "code" | "cognitive". L1 decides which to call.
+        context: Optional context (requirements, history, other persona reports).
 
     Returns:
-        Structured investigation report string.
+        Structured investigation output in [block_name]: value format.
     """
-    execution_mode = assess_workload(file_count, line_change_est, complexity, risk_level)
-    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-    if execution_mode == ExecutionMode.SINGLE_HEAD:
-        return _investigate_single_head(target, mode, context, timestamp)
-    elif execution_mode == ExecutionMode.DUAL_HEAD:
-        return _investigate_dual_head(target, mode, context, timestamp)
-    else:
-        return _investigate_trinity(target, mode, context, timestamp)
-
-
-def _investigate_single_head(target: str, mode: str, context: str, timestamp: str) -> str:
-    """Single head investigation (cognitive only)."""
-    prompt = _SINGLE_HEAD_PROMPT.format(target=target, context=context, mode=mode)
-    result = _call_ai(prompt, "Please investigate and return structured JSON.")
+    prompt = _PROMPTS.get(head_type, _PROMPTS["cognitive"])
+    result = _call_ai(
+        prompt.format(target=target, context=context, mode=mode),
+        f"Analyze from {head_type} perspective.",
+    )
 
     if not result:
         result = {
-            "root_causes": [{"id": "RC-001", "description": "Fallback analysis — no AI provider available", "evidence": "N/A"}],
-            "business_risks": [],
-            "code_risks": [],
-            "suggested_fixes": [],
+            "findings": [{"id": "F-001", "description": "Fallback — no AI provider available"}],
+            "root_causes": [{"id": "RC-001", "description": "Fallback — no AI provider available", "evidence": "N/A"}],
+            "confidence": "low",
         }
 
-    return _format_report(result, target, mode, timestamp, "single_head")
+    return _format_output(result, head_type)
 
 
-def _investigate_dual_head(target: str, mode: str, context: str, timestamp: str) -> str:
-    """Dual head investigation (cognitive + auxiliary)."""
-    if mode == "code_review":
-        aux_prompt = _BUSINESS_PROMPT
-        aux_label = "business"
-    else:
-        aux_prompt = _CODE_PROMPT
-        aux_label = "code"
-
-    aux_result = _call_ai(
-        aux_prompt.format(target=target, context=context, mode=mode),
-        f"Analyze from {aux_label} perspective.",
-    )
-    cognitive_result = _call_ai(
-        _COGNITIVE_PROMPT.format(
-            target=target,
-            business_findings=json.dumps(aux_result.get("findings", [])) if aux_label == "business" else "[]",
-            code_findings=json.dumps(aux_result.get("findings", [])) if aux_label == "code" else "[]",
-        ),
-        "Synthesize and identify root cause.",
-    )
-
-    combined = {
-        "root_causes": cognitive_result.get("root_causes", []),
-        "business_risks": aux_result.get("findings", []) if aux_label == "business" else [],
-        "code_risks": aux_result.get("findings", []) if aux_label == "code" else [],
-        "suggested_fixes": cognitive_result.get("suggested_fixes", []),
-    }
-
-    return _format_report(combined, target, mode, timestamp, "dual_head")
-
-
-def _investigate_trinity(target: str, mode: str, context: str, timestamp: str) -> str:
-    """Trinity investigation — three heads in parallel."""
-    # Launch business head and code head in parallel
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        business_future = executor.submit(
-            _call_ai,
-            _BUSINESS_PROMPT.format(target=target, context=context, mode=mode),
-            "Analyze from business perspective.",
-        )
-        code_future = executor.submit(
-            _call_ai,
-            _CODE_PROMPT.format(target=target, context=context, mode=mode),
-            "Analyze from code perspective.",
-        )
-        business_result = business_future.result()
-        code_result = code_future.result()
-
-    # Cognitive head synthesizes both results
-    cognitive_result = _call_ai(
-        _COGNITIVE_PROMPT.format(
-            target=target,
-            business_findings=json.dumps(business_result.get("findings", [])),
-            code_findings=json.dumps(code_result.get("findings", [])),
-        ),
-        "Synthesize findings and identify root cause.",
-    )
-
-    combined = {
-        "root_causes": cognitive_result.get("root_causes", []),
-        "business_risks": business_result.get("findings", []),
-        "code_risks": code_result.get("findings", []),
-        "suggested_fixes": cognitive_result.get("suggested_fixes", []),
-    }
-
-    return _format_report(combined, target, mode, timestamp, "trinity_six_arms")
-
-
-def _format_report(data: dict, target: str, mode: str, timestamp: str, execution_mode: str) -> str:
-    """Format investigation data into structured report."""
+def _format_output(data: dict, head_type: str) -> str:
+    """Format output in [block_name]: value format per SPEC.md."""
     lines = [
-        "[nezha_report]:",
-        f'  timestamp: "{timestamp}"',
-        f'  target: "{target}"',
-        f'  mode: "{mode}"',
-        f'  execution_mode: "{execution_mode}"',
+        "[task_status]: completed",
+        f'[output_summary]: {data.get("findings", [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else data.get("root_causes", [{}])[0].get("description", "Investigation complete")}',
+        "[capability_used]: problem_solving",
+        f'[tags]: debug, {head_type}',
         "",
-        "[root_cause]:",
+        f"[demon_hunt_result]: head_type={head_type}",
     ]
-    for rc in data.get("root_causes", []):
-        lines.append(f"  - id: {rc.get('id', 'RC-001')}")
-        lines.append(f'    confidence: {rc.get("confidence", "medium")}')
-        lines.append(f'    description: "{rc.get("description", "Unknown")}"')
-        lines.append(f'    evidence: "{rc.get("evidence", "N/A")}"')
+
+    if head_type == "cognitive":
+        lines.append("")
+        lines.append("[root_cause]:")
+        for rc in data.get("root_causes", []):
+            lines.append(f"  - id: {rc.get('id', 'RC-001')}")
+            lines.append(f'    confidence: {rc.get("confidence", "medium")}')
+            lines.append(f'    description: "{rc.get("description", "")}"')
+            lines.append(f'    evidence: "{rc.get("evidence", "N/A")}"')
+            lines.append(f'    surface_symptom: "{rc.get("surface_symptom", "")}"')
+            lines.append(f'    true_nature: "{rc.get("true_nature", "")}"')
+
+        lines.append("")
+        lines.append("[business_risk]:")
+        for br in data.get("business_risks", []):
+            lines.append(f"  - id: {br.get('id', 'BR-001')}")
+            lines.append(f'    severity: {br.get("severity", "medium")}')
+            lines.append(f'    description: "{br.get("description", "")}"')
+
+        lines.append("")
+        lines.append("[code_risk]:")
+        for cr in data.get("code_risks", []):
+            lines.append(f"  - id: {cr.get('id', 'CR-001')}")
+            lines.append(f'    severity: {cr.get("severity", "medium")}')
+            lines.append(f'    category: {cr.get("category", "logic_error")}')
+            lines.append(f'    description: "{cr.get("description", "")}"')
+
+        lines.append("")
+        lines.append("[suggested_fixes]:")
+        for sf in data.get("suggested_fixes", []):
+            lines.append(f"  - id: {sf.get('id', 'SF-001')}")
+            lines.append(f'    priority: {sf.get("priority", "P1")}')
+            lines.append(f'    description: "{sf.get("description", "")}"')
+            files = sf.get("files_affected", [])
+            lines.append(f'    files_affected: {files}')
+    else:
+        lines.append("")
+        lines.append("[findings]:")
+        for f in data.get("findings", []):
+            lines.append(f"  - id: {f.get('id', 'F-001')}")
+            lines.append(f'    severity: {f.get("severity", "medium")}')
+            lines.append(f'    description: "{f.get("description", "")}"')
+            if "scenario" in f:
+                lines.append(f'    scenario: "{f["scenario"]}"')
+            if "category" in f:
+                lines.append(f'    category: {f["category"]}"')
+            if "pattern" in f:
+                lines.append(f'    pattern: "{f["pattern"]}"')
 
     lines.append("")
-    lines.append("[business_risk]:")
-    for br in data.get("business_risks", []):
-        lines.append(f"  - id: {br.get('id', 'BR-001')}")
-        lines.append(f'    severity: {br.get("severity", "medium")}')
-        lines.append(f'    description: "{br.get("description", "")}"')
-
-    lines.append("")
-    lines.append("[code_risk]:")
-    for cr in data.get("code_risks", []):
-        lines.append(f"  - id: {cr.get('id', 'CR-001')}")
-        lines.append(f'    severity: {cr.get("severity", "medium")}')
-        lines.append(f'    category: {cr.get("category", "logic_error")}')
-        lines.append(f'    description: "{cr.get("description", "")}"')
-
-    lines.append("")
-    lines.append("[suggested_fixes]:")
-    for sf in data.get("suggested_fixes", []):
-        lines.append(f"  - id: {sf.get('id', 'SF-001')}")
-        lines.append(f'    priority: {sf.get("priority", "P1")}')
-        lines.append(f'    description: "{sf.get("description", "")}"')
-        files = sf.get("files_affected", [])
-        lines.append(f'    files_affected: {files}')
-
-    lines.append("")
-    lines.append("[agent_handoff]:")
-    lines.append('  recommended_executor: "execution-capable-agent"')
-    lines.append(f'  context_summary: "{data.get("root_causes", [{}])[0].get("description", "Investigation complete")}"')
-    lines.append(f'  report_ref: "nezha-{timestamp}"')
+    lines.append("[next_action]: Synthesize findings. If business/code perspective is missing, call demon_hunt with corresponding head_type.")
+    lines.append("[persona_handoff]:")
+    lines.append('  recommended_executor: "execution-capable-persona"')
+    lines.append(f'  context_summary: "{data.get("findings", [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else data.get("root_causes", [{}])[0].get("description", "Investigation complete")}"')
 
     return "\n".join(lines)
