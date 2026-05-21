@@ -3,12 +3,79 @@ import re
 import argparse
 from typing import List, Dict, Optional
 
+# Try to import semantic_analyzer for AST fallback
+try:
+    from skills.tool_wanglingguan.scripts.semantic_analyzer import analyze_call_graph
+    AST_AVAILABLE = True
+except ImportError:
+    AST_AVAILABLE = False
 
-def find_callers(project_root: str, target_class: str, target_method: str) -> List[Dict]:
+
+def _try_ast_first(project_root: str, target_class: str, target_method: str) -> Optional[List[Dict]]:
+    """
+    Attempt to use AST-based call graph analysis for Python files.
+    Falls back to regex if AST fails or language is not supported.
+    """
+    if not AST_AVAILABLE:
+        return None
+
+    # Only use AST for Python files
+    has_python = any(
+        f.endswith('.py')
+        for _, _, files in os.walk(project_root)
+        for f in files
+    )
+    if not has_python:
+        return None
+
+    try:
+        # Combine class and method if class is provided
+        if target_class and target_class not in ('*', 'any'):
+            target = f"{target_class}.{target_method}"
+        else:
+            target = target_method
+
+        result = analyze_call_graph(project_root, target, include_indirect=False)
+        ast_callers = result.get('call_sites', [])
+
+        # Convert to the legacy format
+        callers = []
+        for site in ast_callers:
+            callers.append({
+                'file': site['file'],
+                'line': site['line'],
+                'context': site.get('context', f"{target_method}(...)"),
+                'method_call': site.get('context', f"{target_method}(...)"),
+            })
+        return callers
+    except Exception:
+        return None
+
+
+def find_callers(project_root: str, target_class: str, target_method: str, mode: str = 'auto') -> List[Dict]:
     """
     Find all call sites of a specific class::method within a project.
-    Returns list of dicts with file, line, and context.
+
+    Args:
+        project_root: Project root directory to search.
+        target_class: Class name to find call sites for.
+        target_method: Method name to find call sites for.
+        mode: 'auto' tries AST first then falls back to regex;
+              'regex' uses only regex matching;
+              'ast' uses only AST (returns empty if AST unavailable).
+
+    Returns:
+        List of dicts with file, line, and context.
     """
+    # Try AST first if mode allows
+    if mode in ('auto', 'ast'):
+        ast_result = _try_ast_first(project_root, target_class, target_method)
+        if ast_result is not None:
+            return ast_result
+        if mode == 'ast':
+            return []
+
+    # Regex fallback
     callers = []
     target_pattern = re.compile(
         rf'((?:->|::)\s*{re.escape(target_method)}\s*\(.*?\))',
@@ -101,6 +168,8 @@ def main():
     parser.add_argument("--line", type=int, help="Line number to check null handling")
     parser.add_argument("--mode", choices=['callers', 'null_check'], required=True,
                         help="Mode: 'callers' to find call sites, 'null_check' to check null handling")
+    parser.add_argument("--trace-mode", choices=['auto', 'regex', 'ast'], default='auto',
+                        help="Call tracing strategy: 'auto' tries AST first then regex, 'regex' uses only regex, 'ast' uses only AST")
 
     args = parser.parse_args()
 
@@ -109,9 +178,10 @@ def main():
             print("Error: --class and --method required for callers mode")
             exit(1)
 
-        callers = find_callers(args.project, args.target_class, args.target_method)
+        callers = find_callers(args.project, args.target_class, args.target_method, mode=args.trace_mode)
         print(f"=== CALLER TRACE REPORT ===")
         print(f"Target: {args.target_class}::{args.target_method}")
+        print(f"Trace mode: {args.trace_mode}")
         print(f"Call sites found: {len(callers)}")
         for c in callers:
             print(f"\nFile: {c['file']}:{c['line']}")

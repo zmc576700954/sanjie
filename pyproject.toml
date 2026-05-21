@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sanjie"
 version = "1.1.0"
-description = "三界 (Three Realms): A decentralized AI-Native Agent Cluster based on MCP."
+description = "三界 (Three Realms): Decentralized Agent/Skill specifications and examples for AI IDE tools."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -17,7 +17,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["mcp>=1.0.0", "pydantic>=2.0", "pyyaml>=6.0"]
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "jsonschema>=4.0",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-python>=0.25.0",
+    "tree-sitter-php>=0.24.0",
+    "tree-sitter-javascript>=0.25.0",
+    "tree-sitter-typescript>=0.23.0",
+    "tree-sitter-go>=0.25.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]

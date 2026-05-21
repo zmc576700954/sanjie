@@ -64,3 +64,47 @@ class TestCodeCallerTracer:
 
             result = check_null_handling(tmpdir, test_file, 7)
             assert result['has_null_check'] is False
+
+
+class TestFindCallersASTFallback:
+    def test_ast_mode_python(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "module.py")
+            with open(test_file, 'w') as f:
+                f.write("def helper():\n    pass\n")
+                f.write("def main():\n")
+                f.write("    helper()\n")
+
+            result = find_callers(tmpdir, "module", "helper", mode="auto")
+            assert len(result) == 1
+            assert result[0]['file'] == test_file
+
+    def test_regex_mode(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "Caller.php")
+            with open(test_file, 'w') as f:
+                f.write("<?php\n")
+                f.write("class Caller {\n")
+                f.write("    public function doSomething() {\n")
+                f.write("        $t = new TargetClass();\n")
+                f.write("        $t->targetMethod();\n")
+                f.write("    }\n")
+                f.write("}\n")
+
+            result = find_callers(tmpdir, "TargetClass", "targetMethod", mode="regex")
+            assert len(result) == 1
+            assert 'targetMethod' in result[0]['context']
+
+    def test_ast_only_mode_no_python(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "test.php")
+            with open(test_file, 'w') as f:
+                f.write("<?php\n")
+                f.write("class Caller {\n")
+                f.write("    public function doSomething() {\n")
+                f.write("        $t->targetMethod();\n")
+                f.write("    }\n")
+                f.write("}\n")
+
+            result = find_callers(tmpdir, "Caller", "targetMethod", mode="ast")
+            assert len(result) == 0  # AST mode returns empty for non-Python files

@@ -4,6 +4,8 @@ import tempfile
 from skills.tool_wanglingguan.scripts.import_validator import (
     find_imports,
     verify_dependency_direction,
+    detect_circular_dependencies,
+    verify_forbidden_dependency,
 )
 
 
@@ -72,3 +74,56 @@ class TestImportValidator:
         with tempfile.TemporaryDirectory() as tmpdir:
             result = verify_dependency_direction(tmpdir, "NonExistentA", "NonExistentB")
             assert result['arrow_correct'] is None
+
+
+class TestDetectCircularDependencies:
+    def test_circular_found(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            a_file = os.path.join(tmpdir, "A.py")
+            with open(a_file, 'w') as f:
+                f.write("import B\n")
+            b_file = os.path.join(tmpdir, "B.py")
+            with open(b_file, 'w') as f:
+                f.write("import A\n")
+
+            cycles = detect_circular_dependencies(tmpdir)
+            assert len(cycles) == 1
+            assert "A" in cycles[0]
+            assert "B" in cycles[0]
+
+    def test_no_circular(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            a_file = os.path.join(tmpdir, "A.py")
+            with open(a_file, 'w') as f:
+                f.write("import B\n")
+            b_file = os.path.join(tmpdir, "B.py")
+            with open(b_file, 'w') as f:
+                f.write("# no import of A\n")
+
+            cycles = detect_circular_dependencies(tmpdir)
+            assert len(cycles) == 0
+
+
+class TestVerifyForbiddenDependency:
+    def test_forbidden_found(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            a_file = os.path.join(tmpdir, "Controller.py")
+            with open(a_file, 'w') as f:
+                f.write("import Repository\n")
+            b_file = os.path.join(tmpdir, "Repository.py")
+            with open(b_file, 'w') as f:
+                f.write("# data access\n")
+
+            violations = verify_forbidden_dependency(tmpdir, [("Controller", "Repository")])
+            assert len(violations) == 1
+            assert violations[0]['from_component'] == "Controller"
+            assert violations[0]['to_component'] == "Repository"
+
+    def test_forbidden_none(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            a_file = os.path.join(tmpdir, "Controller.py")
+            with open(a_file, 'w') as f:
+                f.write("# no forbidden import\n")
+
+            violations = verify_forbidden_dependency(tmpdir, [("Controller", "Repository")])
+            assert len(violations) == 0

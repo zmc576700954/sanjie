@@ -24,7 +24,15 @@
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
       "PowerShell(New-Item *)",
-      "Bash(pytest tests/ -v)"
+      "Bash(pytest tests/ -v)",
+      "Bash(Get-ChildItem -Path . -Depth 2 -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(pip install *)",
+      "Bash(pytest *)",
+      "Bash(git reset *)",
+      "PowerShell(gh pr *)",
+      "Bash(git diff *)",
+      "Read(//tmp/**)"
     ]
   }
 }

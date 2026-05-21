@@ -1,85 +1,124 @@
 # Three Realms (三界): AI-Native Development Protocol
 
-This document defines the core engineering standards and architectural philosophy for the `agents_develop` project. All future agents, skills, and tools developed in this workspace MUST adhere to these principles.
+This document defines the core engineering standards and architectural philosophy for the `agents_develop` project. All future personas, skills, and tools developed in this workspace MUST adhere to these principles.
+
+> **Positioning**: This project operates at **L3 (Config Level)**. We do not build Agent runtimes (L1) or protocols (L2). We provide **Persona templates** and **Skill definitions** that host Agent runtimes (Claude Code, Cursor, Codex, etc.) consume to alter their behavior.
+
+---
+
+## What We Do vs What We Don't
+
+### ❌ We Do NOT
+
+| Don't | Why |
+|-------|-----|
+| **Build an Agent runtime** | Claude Code / Cursor are already the best ReAct runtimes |
+| **Write orchestration code** | L1 (Claude Code) makes all routing decisions via AI model |
+| **Create custom protocols** | MCP is the standard tool protocol; we use it, don't replace it |
+| **Prescribe workflows in Personas** | "Do A then B" violates decentralization; let L1 decide order |
+| **Build message queues or routers** | L1 reads `[next_action]` and decides; no middleware needed |
+
+### ✅ We DO
+
+| Do | Purpose |
+|----|---------|
+| **Define Persona format** | Standardized Capability Registry + Output Schema for L1 discovery |
+| **Provide example Personas** | Show how the format works in practice (Nezha, Taibai, etc.) |
+| **Provide Creator tools** | `tools/create_persona.py` helps users generate compliant Personas |
+| **Define Skill format** | Standardized SKILL.md + deterministic scripts for MCP |
+| **Provide MCP Server suite** | Common tools (file ops, git, test runner) as reusable L2 bricks |
+| **Validate the hypothesis** | Test: does Claude Code reliably route via `[next_action]`? |
+
+---
 
 ## 1. Absolute Decentralization (No Python Orchestrators)
-**Anti-Pattern:** Using a central Python class (like `MultiAgentTripPlanner`) to instantiate agents and hardcode their sequential workflow.
-**Three Realms Standard:**
-- **Zero Central Logic:** Agents (`agents/*.md`) and Skills (`skills/tool_*/`) must be entirely decoupled. There is no `main.py` orchestrating them.
-- **CLI/Host Routing:** Rely exclusively on the host CLI (Claude Code, Gemini CLI, Cursor) to load the appropriate agent based on file metadata (`description`).
-- **Autonomous Handoff:** Agents orchestrate workflows by writing structured text instructions in their output (e.g., `[Action Required]: Wake up $nezha to fix this`), handing control back to the user or the CLI host, not by invoking Python functions.
 
-## 2. MCP-First Tool Design (Universal Accessibility)
-**Anti-Pattern:** Writing Python scripts tightly coupled to our specific framework's internal imports, making them unusable outside our exact setup.
-**Three Realms Standard:**
-- Treat the `skills/` directory not just as local scripts, but as potential **Model Context Protocol (MCP)** servers.
-- Scripts inside `skills/tool_*/scripts/` must be highly cohesive, taking clear CLI arguments or standard JSON input, returning standard JSON or Markdown output.
-- Future tool development (like TianYan's Code Graph or Taibai's Compressor) should prioritize being wrapped as standard MCP servers, allowing them to be consumed by any modern AI IDE instantly.
+**Anti-Pattern:** Using a central Python class to instantiate personas and hardcode their sequential workflow.
 
-## 3. Strict Prompt-Level Tool Protocols (Zero-Code Reliability)
-**Anti-Pattern:** Vague instructions like "use the search tool to find the bug" which leads to LLM hallucinations and malformed tool calls.
 **Three Realms Standard:**
-- Every Agent Persona (`agents/*.md`) MUST contain a `<Celestial Protocol>` section defining exact tool invocation formats.
-- **Use Few-Shot Examples:** Explicitly show how to call tools.
-  *Example:*
-  `To search local logic, you MUST output exactly: [TOOL_CALL:logic_tracer:error_desc="null pointer"]`
-- This ensures that even without a heavy Python parser, the agent's raw text output deterministically triggers the correct actions.
+- **Zero Central Logic:** Personas (`agents/*.md`) and Skills (`skills/tool_*/`) must be entirely decoupled. There is no `main.py` orchestrating them.
+- **L1 Runtime Routing:** Claude Code (or Cursor, Codex) loads the appropriate persona by scanning Capability Registry and using its AI model to match.
+- **Autonomous Handoff:** Personas output structured blocks (e.g., `[next_action]: ...`). L1 reads these and decides the next step — load another persona, call an MCP skill, or answer the user directly.
 
-## 4. Schema Enforcement for Output (The Documentation Guard)
-**Anti-Pattern:** Allowing agents to output unstructured, conversational text when passing data to the next agent or writing documentation.
-**Three Realms Standard:**
-- Agents like Taibai must enforce rigid Data Schemas.
-- When generating files, force the inclusion of YAML Frontmatter (`title`, `status`, `date`).
-- When passing context to another agent, use fenced, standardized blocks:
-  ```
-  [logic_chain]: ...
-  [root_cause]: ...
-  [recommended_skill]: ...
-  ```
-- This structured text acts as the "API" between decentralized agents, replacing Python object passing.
+## 2. MCP-First Tool Design (Deterministic Execution)
 
-## 5. Agentic Memory Pipeline (The GSSC Framework)
-**Anti-Pattern:** Treating memory simply as saving text files or piling everything into `AGENTS.md`, leading to immediate context window bloat.
-**Three Realms Standard:**
-- Memory must be structured across four dimensions: Procedural (Skills), Semantic (Architecture), Episodic (History), and Working (Current task).
-- Agents responsible for documentation and context MUST utilize the **GSSC Pipeline**: 
-  - **G**ather (collect logs/conversations)
-  - **S**elect (filter out noise)
-  - **S**tructure (apply YAML/Markdown schemas)
-  - **C**ompress (use compression tools to shrink tokens before saving).
+**Anti-Pattern:** Writing Python scripts tightly coupled to our specific framework's internal imports.
 
-## 6. A2A (Agent-to-Agent) Text-Based Handoff Protocol
-**Anti-Pattern:** Users copying a conversational response from one agent and pasting it to another, causing the receiving agent to lose focus due to conversational filler.
 **Three Realms Standard:**
-- Agents MUST communicate across the decentralized cluster using a **Data Envelope** format.
-- When an agent suggests invoking another agent (e.g., YangJian calling Nezha), it MUST generate a standardized markdown block:
-  ```markdown
-  ```json A2A_ENVELOPE
-  {
-    "target_agent": "nezha",
-    "context_pointers": ["docs/MEMORY_INDEX.md"],
-    "actionable_spec": "..."
-  }
-  ```
-- Receiving agents are instructed via their `<Celestial Protocol>` to prioritize reading data inside the `A2A_ENVELOPE` block over user conversation.
+- Scripts inside `skills/tool_*/scripts/` must be **CLI-first**, taking clear arguments or JSON input, returning JSON or Markdown.
+- MCP Servers in `mcp-servers/` provide deterministic tool execution with strict `pydantic` schemas.
+- Skills are **workflow** (deterministic), not **decentralized** — same input always produces same output.
+
+## 3. Strict Prompt-Level Tool Protocols
+
+**Anti-Pattern:** Vague instructions like "use the search tool" leading to LLM hallucinations.
+
+**Three Realms Standard:**
+- Every Persona MUST contain exact tool invocation formats with few-shot examples.
+- Example: `To search local logic, output exactly: [TOOL_CALL:logic_tracer:error_desc="null pointer"]`
+- This ensures the persona's raw text output deterministically triggers tool execution.
+
+## 4. Schema Enforcement for Output (The Handoff Contract)
+
+**Anti-Pattern:** Unstructured conversational text between personas, causing context loss.
+
+**Three Realms Standard:**
+- Every Persona MUST output standardized blocks in `[block_name]: value` format.
+- Required blocks: `[task_status]`, `[output_summary]`, `[capability_used]`, `[tags]`
+- Optional but critical: `[next_action]` — L1 uses this for routing decisions.
+- This structured text is the "API" between decentralized personas.
+
+## 5. Free-Thinking Core Directives (No Workflow Steps)
+
+**Anti-Pattern:** Writing "Step 1: Read file. Step 2: Find bug. Step 3: Fix it." in Personas.
+
+**Three Realms Standard:**
+- Core Directives describe **behavior** (what to value, what to avoid, preferred tools).
+- Core Directives do NOT prescribe **sequence** (let L1 decide order).
+- Personas may use any internal structure (pillars, layers, rules) — completely free.
+
+## 6. Capability-Based Discovery (No Hardcoded Names)
+
+**Anti-Pattern:** Hardcoding persona names ("call Nezha") in routing logic.
+
+**Three Realms Standard:**
+- Personas declare capabilities in `## Capability Registry` (domain, tags, confidence).
+- L1 scans these declarations and matches by capability + tags, not by name.
+- Replacing Nezha with JinZha requires zero changes — just swap the `.md` file.
 
 ## 7. Skill Evaluation & Quality Assurance
-**Anti-Pattern:** Developing tools and skills without verifiable metrics on how well the host CLI (Claude Code/Codex) handles the tool invocation.
-**Three Realms Standard:**
-- Every new Skill MUST be verifiable via an Evaluator persona or script.
-- Evaluation focuses on **Tool Execution Accuracy** and **Formatting Compliance** (LLM-as-a-Judge methodology).
-- We maintain quality by testing if an agent can reliably trigger the new tool using only its Markdown prompt in a zero-shot or few-shot scenario.
 
-## 8. MCP Server Security & Schema Standards (Production Readiness)
-**Anti-Pattern:** Writing raw Python parameters without descriptions, returning text strings for errors, and trusting raw file paths from LLMs.
-**Three Realms Standard:**
-- **Strict Schemas:** All MCP tools MUST use `pydantic.Field` to provide exhaustive descriptions for every parameter. This prevents LLM hallucinations (e.g., specifying that text replacements must be exact literal matches).
-- **Native Error Handling:** Tools MUST raise `mcp.shared.exceptions.McpError` (with appropriate `ErrorData` codes like `INTERNAL_ERROR` or `INVALID_PARAMS`) instead of returning error string messages. This enables the client IDE to trigger automatic self-correction.
-- **Path Security (Sandbox):** Any tool that reads or writes to the filesystem MUST validate the target path using a centralized utility (e.g., `utils.ensure_safe_path`). The path must be absolute and strictly constrained within the workspace root to prevent directory traversal attacks.
+**Anti-Pattern:** Developing skills without verifying tool execution accuracy.
 
-## Conclusion for AI Assistants
-When asked to create a new Agent or a new Skill in this project:
-1. **Never** create a central Python orchestrator.
-2. **Always** define the agent as a standalone Markdown file.
-3. **Always** define tools as standalone scripts with strict input/output formats, ready for MCP encapsulation.
-4. **Always** write strict, few-shot prompt protocols for inter-agent communication.
+**Three Realms Standard:**
+- Every new Skill MUST have unit tests in `tests/test_{skill_name}.py`.
+- Evaluation: can a persona reliably trigger this skill using only its Markdown prompt?
+
+## 8. MCP Server Security & Schema Standards
+
+**Anti-Pattern:** Raw parameters without descriptions, string error messages, trusting LLM-provided paths.
+
+**Three Realms Standard:**
+- All MCP tools use `pydantic.Field` for exhaustive parameter descriptions.
+- Tools raise `mcp.shared.exceptions.McpError` with proper `ErrorData` codes.
+- Filesystem tools validate paths via `utils.ensure_safe_path` to prevent traversal attacks.
+
+## 9. Creator Tool Standard
+
+**Anti-Pattern:** Hand-writing Persona files from scratch, leading to inconsistent formats.
+
+**Three Realms Standard:**
+- Use `python tools/create_persona.py --name ... --role ...` to generate compliant templates.
+- Creator tool generates: standard header, Capability Registry table, empty Core Directives, Output Schema.
+- Users fill in the blanks, ensuring all required sections are present.
+
+---
+
+## Conclusion for Contributors
+
+When working on this project:
+1. **Never** write runtime orchestration code — L1 (Claude Code) handles routing.
+2. **Never** put workflow steps in Personas — describe behavior, not sequence.
+3. **Always** use the Creator tool for new Personas — ensures format compliance.
+4. **Always** write unit tests for new Skills — ensures deterministic execution.
+5. **Always** use capability-based descriptions in `[next_action]` — enables hot-swapping.

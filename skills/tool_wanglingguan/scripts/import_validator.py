@@ -190,14 +190,123 @@ def verify_dependency_direction(project_root: str, from_component: str, to_compo
     return result
 
 
+def detect_circular_dependencies(project_root: str) -> List[List[str]]:
+    """
+    Detect circular import dependencies in a project using DFS.
+
+    Builds a graph where nodes are file basenames (without extension)
+    and edges are imports. Returns all unique cycles found.
+
+    Returns:
+        List of cycles, each cycle is a list of file names.
+    """
+    # Build dependency graph
+    graph = {}  # file_name -> set of imported file names
+    file_map = {}  # file_name -> full path
+
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in {'vendor', 'node_modules', '.git', '__pycache__'}]
+        for f in files:
+            if f.endswith(('.php', '.py', '.js', '.ts', '.java')):
+                filepath = os.path.join(root, f)
+                name = os.path.splitext(f)[0]
+                file_map[name] = filepath
+                imports = find_imports(project_root, filepath)
+                deps = set()
+                for imp in imports:
+                    if 'error' in imp:
+                        continue
+                    import_str = imp.get('import', imp.get('imports', imp.get('source', imp.get('package', ''))))
+                    # Extract base name from import string
+                    if import_str:
+                        base = os.path.basename(import_str.replace('\\', '/'))
+                        base = os.path.splitext(base)[0]
+                        if base and base != name:
+                            deps.add(base)
+                graph[name] = deps
+
+    # DFS to find cycles
+    cycles = []
+    visited = set()
+    rec_stack = set()
+    path = []
+
+    def _dfs(node):
+        visited.add(node)
+        rec_stack.add(node)
+        path.append(node)
+
+        for neighbor in graph.get(node, set()):
+            if neighbor not in visited:
+                cycle = _dfs(neighbor)
+                if cycle:
+                    return cycle
+            elif neighbor in rec_stack:
+                # Found a cycle
+                cycle_start = path.index(neighbor)
+                cycle = path[cycle_start:] + [neighbor]
+                return cycle
+
+        path.pop()
+        rec_stack.remove(node)
+        return None
+
+    for node in list(graph.keys()):
+        if node not in visited:
+            cycle = _dfs(node)
+            if cycle:
+                # Normalize: rotate to start with smallest element to deduplicate
+                normalized = cycle[:-1]
+                start_idx = normalized.index(min(normalized))
+                normalized = normalized[start_idx:] + normalized[:start_idx]
+                if normalized not in cycles:
+                    cycles.append(normalized)
+            # Reset for next component
+            path.clear()
+            rec_stack.clear()
+
+    return cycles
+
+
+def verify_forbidden_dependency(project_root: str, forbidden_pairs: List[Tuple[str, str]]) -> List[Dict]:
+    """
+    Verify that no forbidden dependency directions exist in the codebase.
+
+    Args:
+        project_root: Project root directory.
+        forbidden_pairs: List of (from_component, to_component) tuples that must not exist.
+                         E.g., [("Controller", "Repository")] means Controller should not import Repository.
+
+    Returns:
+        List of violations, each with from_component, to_component, file, line.
+    """
+    violations = []
+
+    for from_comp, to_comp in forbidden_pairs:
+        result = verify_dependency_direction(project_root, from_comp, to_comp)
+        if result['arrow_correct'] is True:
+            for ev in result['evidence']:
+                if isinstance(ev, dict):
+                    violations.append({
+                        'from_component': from_comp,
+                        'to_component': to_comp,
+                        'file': ev.get('file'),
+                        'line': ev.get('line'),
+                        'message': f"Forbidden dependency: {from_comp} imports {to_comp}",
+                    })
+
+    return violations
+
+
 def main():
     parser = argparse.ArgumentParser(description="Import Validator - Verify architecture diagram arrows against code imports")
     parser.add_argument("--project", required=True, help="Project root directory")
-    parser.add_argument("--mode", choices=['imports', 'validate_diagram', 'verify_arrow'], required=True)
+    parser.add_argument("--mode", choices=['imports', 'validate_diagram', 'verify_arrow', 'circular', 'forbidden'], required=True)
     parser.add_argument("--file", help="File to analyze imports for")
     parser.add_argument("--from", dest="from_comp", help="Source component for arrow verification")
     parser.add_argument("--to", dest="to_comp", help="Target component for arrow verification")
     parser.add_argument("--components", help="JSON string of components for diagram validation")
+    parser.add_argument("--forbidden", help="JSON list of [from, to] pairs for forbidden dependency check")
 
     args = parser.parse_args()
 
@@ -233,6 +342,28 @@ def main():
             else:
                 print(f"  {ev}")
         print("==========================")
+
+    elif args.mode == 'circular':
+        cycles = detect_circular_dependencies(args.project)
+        print(f"=== CIRCULAR DEPENDENCY CHECK ===")
+        print(f"Cycles found: {len(cycles)}")
+        for cycle in cycles:
+            print(f"  {' -> '.join(cycle)} -> {cycle[0]}")
+        print("=================================")
+
+    elif args.mode == 'forbidden':
+        import json as _json
+        if not args.forbidden:
+            print("Error: --forbidden required for forbidden mode")
+            exit(1)
+        pairs = _json.loads(args.forbidden)
+        violations = verify_forbidden_dependency(args.project, [tuple(p) for p in pairs])
+        print(f"=== FORBIDDEN DEPENDENCY CHECK ===")
+        print(f"Violations found: {len(violations)}")
+        for v in violations:
+            print(f"  {v['from_component']} -> {v['to_component']}")
+            print(f"    File: {v['file']}:{v['line']}")
+        print("==================================")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
+import json
 import os
 import pytest
 from skills.tool_taibai.scripts.review_request import request_review
-from skills.a2a_utils import read_envelope_for_agent
 
 
 class TestRequestReview:
@@ -27,14 +27,17 @@ class TestRequestReview:
         with pytest.raises(FileNotFoundError):
             request_review(str(tmp_path / "missing.md"))
 
-    def test_request_review_envelope_to_review_pool(self, tmp_path, monkeypatch):
+    def test_request_review_file_written(self, tmp_path, monkeypatch):
         doc = tmp_path / "doc.md"
         doc.write_text("Content", encoding="utf-8")
         inbox = tmp_path / "a2a_inbox"
         monkeypatch.setattr("skills.tool_taibai.scripts.review_request.A2A_INBOX_DIR", str(inbox))
         result = request_review(str(doc), review_type="quality", context_notes="Check facts")
-        # Verify envelope was written
-        envelope = read_envelope_for_agent("review-pool", inbox_dir=str(inbox))
-        assert envelope is not None
-        assert envelope["to"] == "review-pool"
-        assert envelope["payload"]["review_type"] == "quality"
+        # Verify review request file was written
+        pending_dir = inbox / "pending"
+        files = list(pending_dir.glob("*.json"))
+        assert len(files) == 1
+        data = json.loads(files[0].read_text(encoding="utf-8"))
+        assert data["to"] == "review-pool"
+        assert data["payload"]["review_type"] == "quality"
+        assert data["payload"]["context_notes"] == "Check facts"

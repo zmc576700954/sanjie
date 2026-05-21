@@ -4,6 +4,7 @@ Submits documents for review by writing an A2A envelope to the review pool.
 The scheduler resolves which agent actually performs the review.
 """
 
+import json
 import os
 import uuid
 from datetime import datetime, timezone
@@ -55,9 +56,12 @@ def request_review(
         },
     }
 
-    # Import here to avoid circular dependencies at module level
-    from skills.a2a_utils import write_envelope
-    write_envelope(envelope, inbox_dir=A2A_INBOX_DIR)
+    # Write review request to a simple JSON file for tracking
+    review_dir = os.path.join(A2A_INBOX_DIR, "pending")
+    os.makedirs(review_dir, exist_ok=True)
+    filepath = os.path.join(review_dir, f"{ticket_id}.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(envelope, f, indent=2, ensure_ascii=False)
 
     return {
         "ticket_id": ticket_id,

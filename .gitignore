@@ -22,7 +22,3 @@ ENV/
 dist/
 build/
 *.egg-info/
-
-# Project specific
-docs/archive/
-.claude/
