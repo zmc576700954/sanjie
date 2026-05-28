@@ -22,3 +22,35 @@ ENV/
 dist/
 build/
 *.egg-info/
+
+# Test artifacts and validation reports (root level)
+/test_*.py
+/*_test.py
+/*_test_*.py
+/*_results*.json
+/test_results*.json
+/test_matrix.json
+/*_report.md
+/*_report.json
+/*_report_*.md
+/*_summary.md
+/round_summaries*.txt
+/semantic_test*.md
+/test_files_*/
+
+# Validation reports in docs
+docs/*_report.md
+docs/*_report.json
+docs/*_analysis.md
+docs/*_optimization*.md
+
+# Test loop/stress scripts and analysis reports in tests/
+tests/*_loop_*.py
+tests/*_stress*.py
+tests/*_results*.json
+tests/*_analysis.md
+tests/*_report.md
+tests/*_report.json
+tests/semantic_evaluator*.py
+tests/semantic_trigger_test.py
+tests/run_unit_tests.py
