@@ -199,7 +199,11 @@ def trace_data_flow(project_root: str, source_pattern: str, sink_pattern: str) -
 
 def find_dead_code(project_root: str, entry_points: List[str]) -> List[Dict]:
     """
-    Find functions/methods that are never called from entry points.
+    Find functions/methods that are transitively unreachable from entry points.
+
+    Builds a full project-wide call graph and performs BFS from entry points
+    to identify all reachable functions. Anything not reached is flagged as
+    potentially dead code.
 
     Args:
         project_root: Project root directory.
@@ -207,18 +211,13 @@ def find_dead_code(project_root: str, entry_points: List[str]) -> List[Dict]:
 
     Returns:
         List of potentially dead functions with file and line info.
-
-    Warning:
-        This is a Phase 1 simple implementation. It only checks calls in
-        entry_points files, not across the entire project. Functions called
-        exclusively by non-entry-point modules will be falsely flagged.
     """
-    # Phase 1: Simple implementation - collect all function definitions
-    # and all function calls from entry points, then diff.
-    all_functions = {}  # name -> list of {file, line, context}
-    called_from_entry = set()
+    from collections import deque
 
-    # Collect all function definitions
+    all_functions = {}        # func_name -> list of {file, line, context}
+    call_graph = {}           # caller_name -> set of callee_names
+
+    # Phase 1: Build full call graph across all Python files
     for filepath in _iter_python_files(project_root):
         try:
             with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -227,19 +226,29 @@ def find_dead_code(project_root: str, entry_points: List[str]) -> List[Dict]:
         except (SyntaxError, UnicodeDecodeError):
             continue
 
-        visitor = _FunctionDefVisitor()
-        visitor.visit(tree)
-        for func in visitor.functions:
+        # Collect function definitions
+        def_visitor = _FunctionDefVisitor()
+        def_visitor.visit(tree)
+        for func in def_visitor.functions:
             func['file'] = filepath
-            key = f"{filepath}:{func['name']}"
-            all_functions[key] = func
+            func_key = func['name']
+            all_functions.setdefault(func_key, []).append(func)
 
-    # Collect calls from entry points
+        # Build call graph edges for this file
+        graph_visitor = _CallGraphVisitor()
+        graph_visitor.visit(tree)
+        for caller, callees in graph_visitor.edges.items():
+            call_graph.setdefault(caller, set()).update(callees)
+
+    # Phase 2: BFS from entry points to find all transitively reachable functions
+    reachable = set()
+    queue = deque()
+
+    # Seed the queue with calls from entry point files
     for ep in entry_points:
         ep_path = os.path.join(project_root, ep) if not os.path.isabs(ep) else ep
         if not os.path.exists(ep_path):
             continue
-
         try:
             with open(ep_path, 'r', encoding='utf-8', errors='ignore') as f:
                 source = f.read()
@@ -249,18 +258,73 @@ def find_dead_code(project_root: str, entry_points: List[str]) -> List[Dict]:
 
         visitor = _CallCollector()
         visitor.visit(tree)
-        called_from_entry.update(visitor.calls)
+        for callee in visitor.calls:
+            if callee not in reachable:
+                reachable.add(callee)
+                queue.append(callee)
 
-    # Find potentially dead functions
+    # BFS traversal through the call graph
+    while queue:
+        current = queue.popleft()
+        for callee in call_graph.get(current, set()):
+            if callee not in reachable:
+                reachable.add(callee)
+                queue.append(callee)
+
+    # Phase 3: Flag functions not reachable from any entry point
     dead = []
-    for key, func in all_functions.items():
+    for func_name, locations in all_functions.items():
         # Skip dunder methods, main, test functions
-        if func['name'].startswith('__') or func['name'] in ('main', 'run'):
+        base_name = func_name.split('.')[-1] if '.' in func_name else func_name
+        if base_name.startswith('__') or base_name in ('main', 'run'):
             continue
-        if func['name'] not in called_from_entry:
-            dead.append(func)
+        if func_name not in reachable:
+            # Also check base_name for non-class-qualified calls
+            if base_name not in reachable:
+                for loc in locations:
+                    dead.append(loc)
 
     return dead
+
+
+class _CallGraphVisitor(ast.NodeVisitor):
+    """Builds caller -> callees edges for an entire file (all functions/methods)."""
+
+    def __init__(self):
+        self.edges: Dict[str, Set[str]] = {}
+        self._current_func: Optional[str] = None
+        self._current_class: Optional[str] = None
+
+    def _qualified_name(self, name: str) -> str:
+        if self._current_class:
+            return f"{self._current_class}.{name}"
+        return name
+
+    def visit_ClassDef(self, node):
+        prev = self._current_class
+        self._current_class = node.name
+        self.generic_visit(node)
+        self._current_class = prev
+
+    def visit_FunctionDef(self, node):
+        prev_func = self._current_func
+        self._current_func = self._qualified_name(node.name)
+        self.generic_visit(node)
+        self._current_func = prev_func
+
+    def visit_AsyncFunctionDef(self, node):
+        self.visit_FunctionDef(node)
+
+    def visit_Call(self, node):
+        if self._current_func is not None:
+            callee = None
+            if isinstance(node.func, ast.Name):
+                callee = node.func.id
+            elif isinstance(node.func, ast.Attribute):
+                callee = node.func.attr
+            if callee:
+                self.edges.setdefault(self._current_func, set()).add(callee)
+        self.generic_visit(node)
 
 
 # ───────────────────────────────────────────────
@@ -278,6 +342,8 @@ class _CallSiteVisitor(ast.NodeVisitor):
         self.current_class: Optional[str] = None
         self.current_function: Optional[str] = None
         self.source_lines: List[str] = []
+        # Track variable -> class name mappings (e.g., svc = Service() => svc -> Service)
+        self._var_to_class: Dict[str, str] = {}
 
     def visit(self, node):
         if hasattr(node, 'lineno'):
@@ -294,11 +360,39 @@ class _CallSiteVisitor(ast.NodeVisitor):
     def visit_FunctionDef(self, node):
         prev_func = self.current_function
         self.current_function = node.name
+        # Track assignments within this function
         self.generic_visit(node)
         self.current_function = prev_func
 
     def visit_AsyncFunctionDef(self, node):
         self.visit_FunctionDef(node)
+
+    def visit_Assign(self, node):
+        """Track variable assignments like svc = Service() or svc = Service.create()."""
+        if self.target_class:
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    var_name = target.id
+                    class_name = self._extract_class_from_call(node.value)
+                    if class_name and class_name == self.target_class:
+                        self._var_to_class[var_name] = class_name
+        self.generic_visit(node)
+
+    def _extract_class_from_call(self, node: ast.AST) -> Optional[str]:
+        """Extract class name from constructor call or factory method.
+        Handles: Service(), Service.create(), module.Service(), etc.
+        """
+        if isinstance(node, ast.Call):
+            func = node.func
+            # Direct: Service()
+            if isinstance(func, ast.Name):
+                return func.id
+            # Factory: Service.create() or module.Service()
+            if isinstance(func, ast.Attribute):
+                # Service.create() -> return 'Service'
+                if isinstance(func.value, ast.Name):
+                    return func.value.id
+        return None
 
     def visit_Call(self, node):
         call_info = self._analyze_call(node)
@@ -333,7 +427,12 @@ class _CallSiteVisitor(ast.NodeVisitor):
 
                 # If include_indirect is False, only match direct class references
                 if not self.include_indirect and receiver not in ('self', 'cls', 'Self'):
-                    if self.target_class and receiver != self.target_class:
+                    # Check if the receiver is a known instance of the target class
+                    is_known_instance = (
+                        self.target_class and
+                        self._var_to_class.get(receiver) == self.target_class
+                    )
+                    if self.target_class and receiver != self.target_class and not is_known_instance:
                         return None
 
                 return {

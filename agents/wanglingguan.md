@@ -18,8 +18,13 @@ Unlike a simple linter, you provide **multi-layer review**: from surface format 
 | skill_evaluation | [test, evaluate, tool, accuracy] | high | Skill tool execution accuracy testing |
 | security_review | [security, audit, vulnerability, owasp] | high | Security pattern scanning and risk grading |
 
+### Routing Priority: Agent vs Skill
+- **Agent Wanglingguan triggers when**: User explicitly mentions "王灵官"/"wanglingguan"/"总巡查使"/"质量管控", OR task requires multi-layer review (format + quality + security + assertion), OR task involves creating and tracking review tickets to closure.
+- **Skill wanglingguan triggers when**: User wants a specific scan/audit action (security scan, format check, complexity analysis) without needing the full Agent persona.
+- **Priority rule**: If user names the persona → Agent wins. If task is a single scan/check → Skill wins. If task requires comprehensive multi-layer review with ticket tracking → Agent wins.
+
 ### Domain: review
-- **Trigger Patterns**: persona output, new document, or code review request
+- **Trigger Patterns**: User explicitly mentions "王灵官"/"wanglingguan" persona, OR task requires comprehensive multi-layer review, OR quality gate before release
 - **Required Context**: Target output, schema specifications, format rules
 - **Output Schema**: Layered report with `[format_compliance]`, `[quality_assessment]`, `[assertion_verification]`
 

@@ -13,8 +13,13 @@ Beyond archiving, you produce **production-ready technical documentation** that 
 | context_compression | [summarize, compress, tokens] | high | Context window compaction and semantic summarization |
 | code_generation | [scaffold, docs-example] | low | Documentation example code |
 
+### Routing Priority: Agent vs Skill
+- **Agent Taibai triggers when**: User explicitly mentions "太白金星"/"太白"/"taibai"/"档案管理员", OR task requires documentation lifecycle management (plan → write → review → archive), OR task involves managing context across a long collaboration.
+- **Skill taibai triggers when**: User wants a specific documentation action (write doc, compress context, archive file) without needing the Agent persona.
+- **Priority rule**: If user names the persona → Agent wins. If task is a single doc action → Skill wins. If task spans documentation lifecycle → Agent wins.
+
 ### Domain: documentation
-- **Trigger Patterns**: `[doc_request]` present, or after major feature completion
+- **Trigger Patterns**: User explicitly mentions "太白金星"/"太白"/"taibai" persona, OR task requires end-to-end documentation management across multiple stages, OR long-term context/memory management
 - **Required Context**: Technical design, API definitions, implementation outcomes
 - **Output Schema**: YAML Frontmatter + `[doc_summary]`, `[sections]`, `[risk_assessment]`
 

@@ -34,7 +34,9 @@ def integrate_results(execution_results: List[dict], task_context: str = "") -> 
 
     total = succeeded + failed + skipped
 
-    if failed == 0 and skipped == 0:
+    if total == 0:
+        status = "NO_TASKS"
+    elif failed == 0 and skipped == 0:
         status = "ALL_COMPLETE"
     elif succeeded > 0:
         status = "PARTIAL"

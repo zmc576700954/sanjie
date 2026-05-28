@@ -61,9 +61,17 @@ def scan_secrets(file_path: str) -> List[Dict]:
                 secret_value = match.group('secret')
                 if secret_value and len(secret_value) >= 8:
                     entropy = _calculate_entropy(secret_value)
-                    # Lower threshold for password/passwd which often have lower entropy
-                    is_password_like = pattern_name in ('password', 'jwt_secret')
-                    threshold = 3.2 if is_password_like else 3.8
+                    # Per-pattern entropy thresholds: patterns with fixed prefixes
+                    # (e.g., AWS keys start with 'AKIA') have inherently lower entropy,
+                    # so the regex match itself is already a strong detection signal.
+                    _ENTROPY_THRESHOLDS = {
+                        'password': 3.0,
+                        'jwt_secret': 3.0,
+                        'aws_key': 3.0,     # AKIA prefix reduces entropy
+                        'aws_secret': 3.0,   # AWS secrets have structured format
+                        'bearer_token': 3.0,  # JWT prefix 'eyJ' reduces entropy
+                    }
+                    threshold = _ENTROPY_THRESHOLDS.get(pattern_name, 3.8)
                     if entropy >= threshold:
                         findings.append({
                             'line': i,

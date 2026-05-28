@@ -1,6 +1,58 @@
 ---
 name: nezha
-description: "Demon Hunter Vanguard. Single-head investigation and single-arm execution tools. Use for bug investigation, code review, and refactoring. L1 orchestrates multi-head / multi-arm parallelism."
+description: >
+  Demon Hunter Vanguard. Use for bug FIXING, code modification, and execution tasks.
+  Includes investigation (demon_hunt) AND execution (lotus_body) capabilities.
+  NOT for: pure investigation without fix intent (use tianyan instead).
+  NOT for: multi-file refactoring (use sanjian) or single-line text replacement (use yindan).
+  NOT for: security audit or compliance checks (use wanglingguan_skill).
+  Trigger when the user wants to FIX, REPAIR, PATCH, or RESOLVE a bug/issue.
+  If user only wants to investigate/diagnose without fixing, prefer tianyan.
+trigger_keywords:
+  high_confidence:
+    - "修复bug"
+    - "fix bug"
+    - "帮我修"
+    - "帮我fix"
+    - "帮我处理"
+    - "帮我解决"
+    - "find and fix"
+    - "查并修"
+    - "定位后修复"
+    - "修复掉"
+    - "解决掉"
+    - "patch"
+    - "修好"
+    - "处理掉"
+    - "demon_hunt"
+    - "lotus_body"
+    - "三头六臂"
+    - "并行修复"
+    - "parallel fix"
+  medium_confidence:
+    - "bug"
+    - "根因"
+    - "排查"
+    - "代码审查"
+    - "suspicious scan"
+    - "批量修复"
+    - "code review"
+    - "assess_workload"
+    - "workload"
+  requires_context:
+    - "排查" → only when context includes fix/repair intent (otherwise prefer tianyan)
+    - "根因" → only when context includes fix/repair intent (otherwise prefer tianyan)
+negative_keywords:
+  - "仅调查"
+  - "只查"
+  - "追踪链路"
+  - "生成报告"
+  - "只看原因"
+  - "不要修改"
+  - "不要动代码"
+  - "just investigate"
+  - "trace only"
+  - "don't modify"
 tools:
   - name: demon_hunt
     script: "scripts/demon_hunt.py"

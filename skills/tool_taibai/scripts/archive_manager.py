@@ -3,8 +3,21 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+from skills.utils import _get_file_lock
+
+INDEX_HEADER = (
+    "# Memory Index\n\n"
+    "| Date | Topic | Summary | Path |\n"
+    "|------|-------|---------|------|\n"
+)
+
+
 def archive_file(filepath: str, topic: str, summary: str, docs_root: str = "docs") -> bool:
-    """Moves a file to the archive directory and updates the memory index."""
+    """Moves a file to the archive directory and updates the memory index.
+
+    The index update is protected by a per-file lock so that concurrent
+    calls never produce duplicate or interleaved entries.
+    """
     if not os.path.exists(filepath):
         return False
 
@@ -18,33 +31,18 @@ def archive_file(filepath: str, topic: str, summary: str, docs_root: str = "docs
     dest_path = os.path.join(archive_dir, filename)
     shutil.move(filepath, dest_path)
 
-    # Update Index
+    # Update Index under a lock to prevent race conditions
     date_str = datetime.now().strftime("%Y-%m-%d")
     relative_dest = (Path("docs/archive") / filename).as_posix()
-
     index_entry = f"| {date_str} | {topic} | {summary} | `{relative_dest}` |\n"
 
-    if os.path.exists(index_file):
+    lock = _get_file_lock(index_file)
+    with lock:
+        need_header = not os.path.exists(index_file)
         with open(index_file, "a", encoding="utf-8") as f:
+            if need_header:
+                f.write(INDEX_HEADER)
             f.write(index_entry)
-    else:
-        with open(index_file, "w", encoding="utf-8") as f:
-            f.write("# Memory Index\n\n")
-            f.write("| Date | Topic | Summary | Path |\n")
-            f.write("|------|-------|---------|------|\n")
-            f.write(index_entry)
-
+            f.flush()
+            os.fsync(f.fileno())
     return True
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--file", required=True)
-    parser.add_argument("--topic", required=True)
-    parser.add_argument("--summary", required=True)
-    args = parser.parse_args()
-    
-    if archive_file(args.file, args.topic, args.summary):
-        print(f"Successfully archived {args.file}")
-    else:
-        print(f"Failed to archive {args.file}")

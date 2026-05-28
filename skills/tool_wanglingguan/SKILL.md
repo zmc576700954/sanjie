@@ -1,9 +1,79 @@
 ---
 name: wanglingguan
 description: >
-  Compliance, auditing, and security scanning toolset. Use this to verify if generated documents,
-  agent outputs, and code adhere to Celestial Architecture standards. Provides multi-layer review:
-  format compliance, quality assessment, assertion verification, and closed-loop ticket tracking.
+  Compliance, auditing, and security scanning toolset. Use to verify if documents,
+  agent outputs, and code adhere to Celestial Architecture standards. Provides
+  multi-layer review: format compliance, quality assessment, assertion verification,
+  and closed-loop ticket tracking.
+  NOT for: writing documentation (use taibai_skill).
+  NOT for: fixing bugs or code modification (use nezha_skill or yindan).
+  NOT for: pure investigation without audit intent (use tianyan).
+  Trigger when the user wants to AUDIT, SCAN for vulnerabilities, CHECK compliance,
+  VERIFY format, ANALYZE code quality/complexity, or TRACK review findings.
+trigger_keywords:
+  high_confidence:
+    - "安全扫描"
+    - "安全漏洞"
+    - "安全审查"
+    - "安全审计"
+    - "合规检查"
+    - "格式审查"
+    - "格式检查"
+    - "代码质量检查"
+    - "complexity分析"
+    - "cyclomatic"
+    - "OWASP"
+    - "SQL注入"
+    - "硬编码密钥"
+    - "security scan"
+    - "security audit"
+    - "vulnerability scan"
+    - "compliance check"
+    - "format audit"
+    - "code quality"
+    - "quality check"
+    - "渗透测试"
+    - "penetration test"
+    - "CVE"
+    - "review ticket"
+    - "assertion verification"
+    - "全面审查"
+    - "全面的代码审查"
+    - "上线前check"
+    - "发布前检查"
+    - "上线前审查"
+  medium_confidence:
+    - "审查"
+    - "合规"
+    - "安全"
+    - "security"
+    - "audit"
+    - "compliance"
+    - "扫描"
+    - "scan"
+    - "复杂度"
+    - "complexity"
+    - "hardcoded"
+    - "secret"
+    - "API key"
+    - "token"
+    - "password"
+    - "敏感信息"
+    - "XSS"
+    - "injection"
+    - "verify"
+    - "check"
+  requires_context:
+    - "审查" → only when context involves compliance/quality/security review (not reading code for understanding)
+    - "安全" → only when context involves code/config security (not general safety)
+    - "check" → only when context involves quality/compliance verification (not casual checking)
+negative_keywords:
+  - "写文档"
+  - "归档"
+  - "压缩上下文"
+  - "生成报告"
+  - "write docs"
+  - "archive"
 tools:
   - name: format_auditor
     script: "scripts/format_auditor.py"

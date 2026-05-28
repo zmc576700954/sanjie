@@ -1,0 +1,37 @@
+{
+  "ticket_id": "WLG-20260527-A25C0D2D",
+  "created_at": "2026-05-27T10:28:31.485559+00:00",
+  "target_agent": "yangjian",
+  "target_file": "/sessions/bold-vigilant-noether/mnt/agents_develop/tests/.tmp_loop100/4dcf19ed/vuln.py",
+  "assertion_type": "CONFIG_SAFE",
+  "severity": "Critical",
+  "description": "Debug mode and hardcoded secret",
+  "evidence": {
+    "file": "/sessions/bold-vigilant-noether/mnt/agents_develop/tests/.tmp_loop100/4dcf19ed/vuln.py"
+  },
+  "status": "verified",
+  "status_history": [
+    {
+      "status": "open",
+      "timestamp": "2026-05-27T10:28:31.485559+00:00",
+      "actor": "wanglingguan"
+    },
+    {
+      "status": "pending",
+      "timestamp": "2026-05-27T10:28:31.501487+00:00",
+      "actor": "yangjian"
+    },
+    {
+      "status": "verified",
+      "timestamp": "2026-05-27T10:28:31.513534+00:00",
+      "actor": "wanglingguan"
+    }
+  ],
+  "fix_suggestion": "Remove DEBUG=True and use env vars for secrets",
+  "fixed_file": "/sessions/bold-vigilant-noether/mnt/agents_develop/tests/.tmp_loop100/4dcf19ed/vuln.py",
+  "verified_by": "wanglingguan",
+  "verification_result": {
+    "passed": true
+  },
+  "due_date": null
+}

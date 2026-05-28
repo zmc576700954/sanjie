@@ -1,6 +1,8 @@
 """Task difficulty assessment and skill routing."""
 from typing import List
 
+from skills.tool_bajiu.scripts.text_utils import word_match
+
 
 def analyze_task(task_context: str, skill_profiles: List[dict]) -> dict:
     """
@@ -82,20 +84,24 @@ def route_task(task_context: str, difficulty: str, matched_candidates: List[dict
 
 
 def _extract_factors(ctx: str) -> dict:
-    """Extract decision factors from task context."""
+    """Extract decision factors from task context using stemmed word matching."""
     ctx_lower = ctx.lower() if ctx else ""
 
-    is_fix = any(k in ctx_lower for k in ["fix", "repair", "patch", "修复", "修正", "替换"])
-    is_create = any(k in ctx_lower for k in ["add", "create", "implement", "feature", "新增", "创建", "开发"])
-    is_rewrite = any(k in ctx_lower for k in ["refactor", "rewrite", "restructure", "重构", "重写", "重组"])
-    is_delete = any(k in ctx_lower for k in ["delete", "remove", "cleanup", "deprecated", "删除", "清理", "废弃"])
+    is_fix = word_match(ctx_lower, ["fix", "repair", "patch", "修复", "修正", "替换"])
+    is_create = word_match(ctx_lower, ["add", "create", "implement", "feature", "新增", "创建", "开发"])
+    is_rewrite = word_match(ctx_lower, ["refactor", "rewrite", "restructure", "重构", "重写", "重组"])
+    is_delete = word_match(ctx_lower, ["delete", "remove", "cleanup", "deprecated", "删除", "清理", "废弃"])
 
     scope = 0.3
-    if any(k in ctx_lower for k in ["multi-file", "multiple files", "cross-module", "global", "entire", "all files", "多文件", "跨模块", "全局", "整个"]):
+    if word_match(ctx_lower, [
+        "multi-file", "multiple files", "cross-module",
+        "global", "globally", "entire", "entirely", "all files",
+        "多文件", "跨模块", "全局", "整个",
+    ]):
         scope = 1.0
-    elif any(k in ctx_lower for k in ["several", "a few files", "related", "几个文件", "关联"]):
+    elif word_match(ctx_lower, ["several", "a few files", "related", "几个文件", "关联"]):
         scope = 0.6
-    elif any(k in ctx_lower for k in ["single", "this file", "one file", "单文件", "局部", "这个文件"]):
+    elif word_match(ctx_lower, ["single", "this file", "one file", "单文件", "局部", "这个文件"]):
         scope = 0.1
 
     return {
@@ -115,7 +121,7 @@ def _check_prerequisites(skill_name: str, ctx: str, factors: dict) -> dict:
         return {"passed": False, "reason": "Not a small-scope fix"}
 
     if "taie" in skill_name:
-        if factors["is_create"] and not factors["is_rewrite"]:
+        if factors["is_create"]:
             return {"passed": True, "reason": "Feature development"}
         if factors["is_fix"] and factors["scope"] > 0.3:
             return {"passed": True, "reason": "Larger-scope modification"}

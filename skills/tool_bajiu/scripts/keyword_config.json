@@ -1,0 +1,29 @@
+{
+  "keyword_map": {
+    "yindan": ["none", "typeerror", "import", "module", "null", "attribute"],
+    "sanjian": ["refactor", "rewrite", "restructure", "重构", "重写"],
+    "kaishan": ["bulk", "cleanup", "deprecated", "批量", "清理", "废弃"],
+    "taie": ["feature", "implement", "add", "新增", "开发", "实现", "new"]
+  },
+  "action_keywords": {
+    "refactor": {"skill": "sanjian", "weight": 8},
+    "rewrite": {"skill": "sanjian", "weight": 8},
+    "restructure": {"skill": "sanjian", "weight": 8},
+    "重构": {"skill": "sanjian", "weight": 8},
+    "重写": {"skill": "sanjian", "weight": 8},
+    "bulk": {"skill": "kaishan", "weight": 7},
+    "cleanup": {"skill": "kaishan", "weight": 7},
+    "deprecated": {"skill": "kaishan", "weight": 7},
+    "清理": {"skill": "kaishan", "weight": 7},
+    "废弃": {"skill": "kaishan", "weight": 7},
+    "批量": {"skill": "kaishan", "weight": 7},
+    "remove": {"skill": "kaishan", "weight": 6},
+    "feature": {"skill": "taie", "weight": 6},
+    "implement": {"skill": "taie", "weight": 6},
+    "add": {"skill": "taie", "weight": 6},
+    "新增": {"skill": "taie", "weight": 6},
+    "开发": {"skill": "taie", "weight": 6},
+    "实现": {"skill": "taie", "weight": 6},
+    "new": {"skill": "taie", "weight": 5}
+  }
+}

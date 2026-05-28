@@ -1,6 +1,68 @@
 ---
 name: taibai
-description: "Documentation management, context compression, archiving, and GSSC pipeline toolset."
+description: >
+  Documentation management, context compression, archiving, and GSSC pipeline toolset.
+  Use for: writing technical docs, archiving completed work, compressing conversation
+  logs/context, generating structured reports, and managing documentation lifecycle.
+  NOT for: image/file compression, zip/archive files (this is about CONTEXT compression).
+  NOT for: code compliance checks or security audits (use wanglingguan_skill).
+  NOT for: code quality review (use wanglingguan_skill for that).
+  Trigger when the user wants to WRITE, ORGANIZE, COMPRESS (context), ARCHIVE,
+  or GENERATE documentation/reports.
+trigger_keywords:
+  high_confidence:
+    - "写文档"
+    - "归档"
+    - "压缩上下文"
+    - "压缩对话"
+    - "压缩日志"
+    - "生成报告"
+    - "技术文档"
+    - "changelog"
+    - "decision log"
+    - "meeting notes"
+    - "会议纪要"
+    - "GSSC"
+    - "generate report"
+    - "write docs"
+    - "archive"
+    - "compress context"
+    - "compress conversation"
+    - "上下文压缩"
+    - "context compress"
+    - "记忆管理"
+    - "设计文档"
+    - "技术方案"
+    - "变更记录"
+    - "交接文档"
+    - "spec文档"
+  medium_confidence:
+    - "文档"
+    - "总结"
+    - "记录"
+    - "梳理"
+    - "整理"
+    - "精简"
+    - "structured"
+    - "summarize"
+    - "log"
+    - "verbose"
+    - "太长了"
+    - "sprint交付"
+    - "技术决策"
+  requires_context:
+    - "压缩" → only when context involves conversation, logs, context window, or documentation (NOT images, files, or data)
+    - "总结" → only when context involves documentation output (not casual explanation)
+    - "整理" → only when context involves document organization (not code cleanup)
+negative_keywords:
+  - "审查"
+  - "audit"
+  - "安全扫描"
+  - "compliance"
+  - "漏洞"
+  - "security scan"
+  - "格式检查"
+  - "cyclomatic"
 tools:
   - name: archive_manager
     script: "scripts/archive_manager.py"

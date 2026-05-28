@@ -1,9 +1,63 @@
 ---
 name: bajiu
 description: >
-  Use when a task is ambiguous and needs difficulty assessment, skill routing,
-  or execution planning. Scans available skills, evaluates task complexity,
-  and outputs a structured execution plan. No side effects — analysis only.
+  Use when a task is ambiguous and the user is UNDECIDED about which tool or approach to use.
+  Scans available skills, evaluates task complexity, and outputs a structured execution plan.
+  No side effects — analysis only.
+  NOT for: tasks where the user already knows the operation type (use the corresponding skill directly).
+  NOT for: algorithm analysis, learning plans, time complexity evaluation, or non-code planning.
+  NOT for: simple questions, git operations, file listing, or casual conversation.
+  Trigger ONLY when the user explicitly asks "which tool", "how to approach", "evaluate difficulty",
+  "break down task", "prioritize issues", or expresses genuine uncertainty about method choice.
+trigger_keywords:
+  high_confidence:
+    - "哪个工具"
+    - "该用什么"
+    - "怎么处理这个任务"
+    - "帮我评估难度"
+    - "which tool"
+    - "how to approach"
+    - "break down task"
+    - "triage"
+    - "prioritize issues"
+    - "execution plan"
+    - "任务拆解"
+    - "排个优先级"
+    - "不确定用什么方式"
+    - "不知道从哪开始"
+    - "分几步"
+    - "先后顺序"
+  medium_confidence:
+    - "评估"
+    - "规划"
+    - "计划"
+    - "复杂度"
+    - "工作量"
+    - "难度"
+    - "assess"
+    - "plan"
+    - "complexity"
+    - "workload"
+    - "evaluate"
+  requires_context:
+    - "评估" → only when context is about code tasks (not algorithms, learning, etc.)
+    - "规划" → only when context involves code/tool selection (not life/study plans)
+    - "计划" → only when context involves development tasks (not learning schedules)
+negative_keywords:
+  - "重构"
+  - "refactor"
+  - "删除"
+  - "delete"
+  - "修复"
+  - "fix"
+  - "安全"
+  - "security"
+  - "文档"
+  - "document"
+  - "实现"
+  - "implement"
+  - "开发"
+  - "develop"
 tools:
   - name: skill_scanner
     script: "scripts/skill_scanner.py"

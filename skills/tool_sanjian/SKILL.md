@@ -5,7 +5,63 @@ description: >
   reorganization, or large-scale content integration. Handles task decomposition,
   dependency analysis, scope-controlled execution with backup/rollback, and
   result aggregation. Requires explicit user approval before execution.
-  Do NOT use for single-file fixes or new feature development.
+  NOT for: single-file fixes or new feature development (use taie or yindan).
+  NOT for: difficulty assessment without refactoring intent (use bajiu).
+  NOT for: simple single-line text replacement (use yindan).
+  Trigger when the user wants to RESTRUCTURE, REFACTOR, MIGRATE, or REORGANIZE
+  code across MULTIPLE files, or change the ARCHITECTURE of a module.
+trigger_keywords:
+  high_confidence:
+    - "多文件重构"
+    - "架构重组"
+    - "模块拆分"
+    - "代码迁移"
+    - "跨文件重构"
+    - "multi-file refactoring"
+    - "architecture restructure"
+    - "module split"
+    - "code migration"
+    - "decouple"
+    - "拆成微服务"
+    - "拆成三层"
+    - "解耦"
+    - "untangle"
+    - "god object"
+    - "monolith"
+    - "整体迁移到"
+    - "全面重构"
+    - "大规模改动"
+    - "major refactor"
+    - "overhaul"
+    - "restructure"
+    - "reorganize"
+  medium_confidence:
+    - "重构"
+    - "重组"
+    - "迁移"
+    - "refactor"
+    - "migrate"
+    - "多个文件"
+    - "跨文件"
+    - "循环依赖"
+    - "dependency"
+    - "依赖关系"
+    - "拓扑"
+    - "接口变更"
+    - "同时动"
+    - "大改"
+    - "升级到"
+    - "适配"
+  requires_context:
+    - "重构" → only when context involves MULTIPLE files or architectural changes (single-line formatting is NOT refactoring)
+    - "迁移" → only when context involves moving code between architectures/frameworks (not data migration)
+negative_keywords:
+  - "单个文件"
+  - "一处"
+  - "single file"
+  - "就改一处"
+  - "一行"
+  - "改个typo"
 risk_level: high
 guard_rules:
   - name: scope_guardian

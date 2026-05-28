@@ -1,10 +1,72 @@
 ---
 name: tianyan
 description: >
-  Use when investigating bugs, tracing business logic, diagnosing errors,
+  Use when INVESTIGATING bugs, tracing business logic, diagnosing errors,
   or searching technical documentation. Handles deep root-cause analysis,
   logic chain tracing, and multi-source doc queries with cross-verification.
-  Do NOT use for code modification — investigation only.
+  Investigation only — never modifies code.
+  NOT for: code modification, bug fixing, patching, or executing repairs (use nezha_skill).
+  NOT for: git blame, file listing, reading code for understanding (no error involved).
+  NOT for: security compliance checks or format audits (use wanglingguan_skill).
+  Trigger ONLY when the user wants to FIND OUT WHY something is wrong,
+  not when they want to FIX it. If user says "查并修" or "find and fix",
+  prefer nezha_skill.
+trigger_keywords:
+  high_confidence:
+    - "追踪"
+    - "诊断"
+    - "查错"
+    - "为什么报错"
+    - "哪里出了问题"
+    - "查找原因"
+    - "trace"
+    - "diagnose"
+    - "investigate"
+    - "root cause analysis"
+    - "logic chain"
+    - "call stack"
+    - "stack trace"
+    - "error cause"
+    - "cross verify"
+    - "官方文档"
+    - "official documentation"
+    - "handoff report"
+  medium_confidence:
+    - "报错"
+    - "error"
+    - "crash"
+    - "异常"
+    - "exception"
+    - "不正常"
+    - "出了问题"
+    - "null pointer"
+    - "空指针"
+    - "超时"
+    - "timeout"
+    - "OOM"
+    - "死锁"
+    - "不执行"
+    - "性能"
+    - "regression"
+    - "响应时间"
+    - "间歇性"
+    - "逻辑"
+  requires_context:
+    - "逻辑" → only when context involves tracing code execution paths (not reading code for understanding)
+    - "分析" → only when context involves error diagnosis (not code review or refactoring analysis)
+negative_keywords:
+  - "修复"
+  - "fix"
+  - "修掉"
+  - "解决"
+  - "处理一下"
+  - "patch"
+  - "直接改"
+  - "帮我改"
+  - "帮我修"
+  - "帮我fix"
+  - "紧急修复"
+  - "修好"
 tools:
   - name: logic_tracer
     script: "scripts/logic_tracer.py"
@@ -21,6 +83,11 @@ tools:
     parameters:
       local: "Local logic implementation string or file path."
       spec: "Fetched official spec string."
+  - name: security_auditor
+    script: "scripts/security_auditor.py"
+    parameters:
+      target: "File path to scan, or raw code content."
+      is_content: "Set true to treat target as raw code string."
 ---
 
 # Investigation & Logic Tracing

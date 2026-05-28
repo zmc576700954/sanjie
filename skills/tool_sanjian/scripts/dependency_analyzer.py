@@ -22,7 +22,6 @@ def analyze_dependencies(target_files: List[str], project_root: str = "") -> dic
 
     for filepath in target_files:
         imports = _extract_imports(filepath, project_root)
-        # Filter to only imports that reference other target files
         relevant = [imp for imp in imports if imp in target_files]
         graph[filepath] = relevant
         for dep in relevant:
@@ -32,7 +31,6 @@ def analyze_dependencies(target_files: List[str], project_root: str = "") -> dic
 
     topo_order = _topological_sort(graph, target_files)
     circular = _detect_cycles(graph)
-    # Interface boundaries: files depended on by >= 3 others
     boundaries = [f for f, deps in reverse_deps.items() if len(deps) >= 3]
 
     return {
@@ -109,16 +107,30 @@ def _topological_sort(graph: Dict[str, List[str]], all_files: List[str]) -> List
 
 
 def _detect_cycles(graph: Dict[str, List[str]]) -> List[List[str]]:
-    """Detect circular dependencies."""
+    """Detect circular dependencies (deduplicated)."""
     cycles: List[List[str]] = []
+    seen: Set[tuple] = set()
     visited: Set[str] = set()
     path: List[str] = []
     on_path: Set[str] = set()
 
+    def _canonical(cycle: List[str]) -> tuple:
+        """Normalize cycle: rotate so smallest element is first, drop repeated tail."""
+        body = cycle[:-1]
+        if not body:
+            return ()
+        min_idx = body.index(min(body))
+        rotated = body[min_idx:] + body[:min_idx]
+        return tuple(rotated)
+
     def dfs(node: str):
         if node in on_path:
             cycle_start = path.index(node)
-            cycles.append(path[cycle_start:] + [node])
+            raw_cycle = path[cycle_start:] + [node]
+            canonical = _canonical(raw_cycle)
+            if canonical and canonical not in seen:
+                seen.add(canonical)
+                cycles.append(raw_cycle)
             return
         if node in visited:
             return

@@ -1,9 +1,10 @@
-"""Three-tier routing orchestrator: L1 keyword, L2 LLM, L3 fallback."""
+"""Three-tier routing orchestrator: L1 keyword, L2 local/LLM, L3 fallback."""
 
 import json
 
 from skills.tool_bajiu.scripts import keyword_router
 from skills.tool_bajiu.scripts import confidence_scorer
+from skills.tool_bajiu.scripts.unified_classifier import classify as unified_classify
 from skills.tool_bajiu.scripts.providers import get_available_provider
 
 
@@ -49,14 +50,14 @@ def route(error_desc: str, source_code: str = "") -> dict:
     # L1 confidence scoring
     confidence_value = confidence_scorer.score_classification(l1_result, error_desc)
 
-    if confidence_value >= 0.9:
+    if confidence_value >= 0.7:
         result = dict(l1_result)
         result["confidence"] = "high"
         result["tier"] = "L1"
         result["reasoning"] = f"L1 keyword match with confidence {confidence_value:.2f}"
         return _ensure_keys(result, error_desc)
 
-    # L2: LLM inference
+    # L2: try LLM first, then local unified classifier as fallback
     provider = get_available_provider()
     if provider is not None:
         try:
@@ -77,6 +78,20 @@ def route(error_desc: str, source_code: str = "") -> dict:
                 return _ensure_keys(result, error_desc)
         except Exception:
             pass
+
+    # L2 fallback: local unified classifier (no LLM required)
+    local_result = unified_classify(error_desc)
+    if local_result["score_value"] > 0:
+        result = {
+            "recommended_skill": local_result["recommended_skill"],
+            "root_cause": l1_result.get("root_cause", "Classified by local engine."),
+            "logic_chain": l1_result.get("logic_chain", f"Error: {error_desc[:80]}."),
+            "action": l1_result.get("action", "Apply classified skill."),
+            "confidence": "medium",
+            "reasoning": f"L2 local classifier: {local_result['reasoning']}",
+            "tier": "L2",
+        }
+        return _ensure_keys(result, error_desc)
 
     # L3 fallback
     result = dict(l1_result)

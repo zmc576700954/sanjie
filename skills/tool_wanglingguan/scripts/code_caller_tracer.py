@@ -77,8 +77,10 @@ def find_callers(project_root: str, target_class: str, target_method: str, mode:
 
     # Regex fallback
     callers = []
+    # Support Python (.), PHP (->, ::), and other languages
+    # Negative lookbehind excludes 'function target(' declarations
     target_pattern = re.compile(
-        rf'((?:->|::)\s*{re.escape(target_method)}\s*\(.*?\))',
+        rf'((?<!function\s)(?<!def\s)(?:\.|->|::)\s*{re.escape(target_method)}\s*\()',
         re.IGNORECASE
     )
 
@@ -97,12 +99,38 @@ def find_callers(project_root: str, target_class: str, target_method: str, mode:
             except Exception:
                 continue
 
+            # Pre-compute class context for this file
+            # For PHP: track which class $this refers to
+            class_decls = {}  # line_number -> class_name
+            for ci, cline in enumerate(lines):
+                # PHP/Java/JS class declaration
+                cls_match = re.search(r'\bclass\s+(\w+)', cline)
+                if cls_match:
+                    class_decls[ci + 1] = cls_match.group(1)
+                # Python class declaration
+                cls_match = re.search(r'^class\s+(\w+)', cline)
+                if cls_match:
+                    class_decls[ci + 1] = cls_match.group(1)
+
             for i, line in enumerate(lines, start=1):
                 match = target_pattern.search(line)
                 if match:
                     # Check if this line also references the target class
                     class_pattern = re.compile(rf'\b{re.escape(target_class)}\b', re.IGNORECASE)
-                    if class_pattern.search(line) or (i > 1 and class_pattern.search(lines[i - 2])):
+                    explicit_class = class_pattern.search(line) or (i > 1 and class_pattern.search(lines[i - 2]))
+
+                    # Also accept $this-> (PHP) and self./cls. (Python) as implicit class references
+                    implicit_class = bool(re.search(r'\$this\s*->|self\s*\.|cls\s*\.', line))
+
+                    # Or check if the current line is inside the target class scope
+                    in_class_scope = False
+                    if not explicit_class and not implicit_class:
+                        for decl_line, decl_class in class_decls.items():
+                            if decl_line <= i and decl_class.lower() == target_class.lower():
+                                in_class_scope = True
+                                break
+
+                    if explicit_class or implicit_class or in_class_scope:
                         callers.append({
                             'file': filepath,
                             'line': i,
@@ -121,7 +149,7 @@ def check_null_handling(project_root: str, file_path: str, line_number: int) -> 
     null_patterns = [
         r'if\s*\(\s*\$\w+\s*===?\s*(null|NULL)',
         r'if\s*\(\s*(empty|is_null|isset)\s*\(',
-        r'\$\w+\s*\??\.\s*\w+',  # PHP 8+ nullsafe operator
+        r'\$\w+\s*\?->\s*\w+',   # PHP 8+ nullsafe operator (?-> only, not plain ->)
         r'\?\?\s*',  # null coalescing
         r'if\s*\(\s*\$\w+\s*\)',  # truthy check
         r'@\w+',  # error suppression (weak but present)
@@ -170,39 +198,3 @@ def main():
                         help="Mode: 'callers' to find call sites, 'null_check' to check null handling")
     parser.add_argument("--trace-mode", choices=['auto', 'regex', 'ast'], default='auto',
                         help="Call tracing strategy: 'auto' tries AST first then regex, 'regex' uses only regex, 'ast' uses only AST")
-
-    args = parser.parse_args()
-
-    if args.mode == 'callers':
-        if not args.target_class or not args.target_method:
-            print("Error: --class and --method required for callers mode")
-            exit(1)
-
-        callers = find_callers(args.project, args.target_class, args.target_method, mode=args.trace_mode)
-        print(f"=== CALLER TRACE REPORT ===")
-        print(f"Target: {args.target_class}::{args.target_method}")
-        print(f"Trace mode: {args.trace_mode}")
-        print(f"Call sites found: {len(callers)}")
-        for c in callers:
-            print(f"\nFile: {c['file']}:{c['line']}")
-            print(f"  Context: {c['context']}")
-        print("===========================")
-
-    elif args.mode == 'null_check':
-        if not args.file or not args.line:
-            print("Error: --file and --line required for null_check mode")
-            exit(1)
-
-        result = check_null_handling(args.project, args.file, args.line)
-        print(f"=== NULL HANDLING CHECK ===")
-        print(f"File: {args.file}:{args.line}")
-        print(f"Has null check: {'YES' if result['has_null_check'] else 'NO'}")
-        if result['checks_found']:
-            print("Checks found:")
-            for check in result['checks_found']:
-                print(f"  Line {check['line']}: {check['code']}")
-        print("===========================")
-
-
-if __name__ == "__main__":
-    main()
