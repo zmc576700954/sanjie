@@ -1,0 +1,23 @@
+{
+  "ticket_id": "WLG-20260529-7522DB22",
+  "created_at": "2026-05-29T07:38:19.932531+00:00",
+  "target_agent": "c",
+  "target_file": "f3.py",
+  "assertion_type": "CONFIG_SAFE",
+  "severity": "Warning",
+  "description": "d3",
+  "evidence": {},
+  "status": "open",
+  "status_history": [
+    {
+      "status": "open",
+      "timestamp": "2026-05-29T07:38:19.932531+00:00",
+      "actor": "wanglingguan"
+    }
+  ],
+  "fix_suggestion": "f3",
+  "fixed_file": null,
+  "verified_by": null,
+  "verification_result": null,
+  "due_date": null
+}

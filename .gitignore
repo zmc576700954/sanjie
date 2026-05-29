@@ -45,12 +45,4 @@ docs/*_analysis.md
 docs/*_optimization*.md
 
 # Test loop/stress scripts and analysis reports in tests/
-tests/*_loop_*.py
-tests/*_stress*.py
-tests/*_results*.json
-tests/*_analysis.md
-tests/*_report.md
-tests/*_report.json
-tests/semantic_evaluator*.py
-tests/semantic_trigger_test.py
-tests/run_unit_tests.py
+/tests

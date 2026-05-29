@@ -105,7 +105,7 @@ def _format_output(data: dict, head_type: str) -> str:
     """Format output in [block_name]: value format per SPEC.md."""
     lines = [
         "[task_status]: completed",
-        f'[output_summary]: {data.get("findings", [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else data.get("root_causes", [{}])[0].get("description", "Investigation complete")}',
+        f'[output_summary]: {(data.get("findings") or [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else (data.get("root_causes") or [{}])[0].get("description", "Investigation complete")}',
         "[capability_used]: problem_solving",
         f'[tags]: debug, {head_type}',
         "",
@@ -164,6 +164,6 @@ def _format_output(data: dict, head_type: str) -> str:
     lines.append("[next_action]: Synthesize findings. If business/code perspective is missing, call demon_hunt with corresponding head_type.")
     lines.append("[persona_handoff]:")
     lines.append('  recommended_executor: "execution-capable-persona"')
-    lines.append(f'  context_summary: "{data.get("findings", [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else data.get("root_causes", [{}])[0].get("description", "Investigation complete")}"')
+    lines.append(f'  context_summary: "{(data.get("findings") or [{}])[0].get("description", "Investigation complete") if head_type != "cognitive" else (data.get("root_causes") or [{}])[0].get("description", "Investigation complete")}"')
 
     return "\n".join(lines)
