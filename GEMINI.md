@@ -3,6 +3,8 @@
 This document defines the core engineering standards and architectural philosophy for the `agents_develop` project. All future personas, skills, and tools developed in this workspace MUST adhere to these principles.
 
 > **Positioning**: This project operates at **L3 (Config Level)**. We do not build Agent runtimes (L1) or protocols (L2). We provide **Persona templates** and **Skill definitions** that host Agent runtimes (Claude Code, Cursor, Codex, etc.) consume to alter their behavior.
+>
+> **Implementation note**: The Python package (`src/agents_develop/`) adds an optional **L1 Orchestrator** layer (`orchestrator.py` + `skill_bridge.py`) for standalone usage. This does not replace the L3 Config approach — when used inside Claude Code, the host runtime (Claude Code) handles routing directly via Persona Capability Registry. The Orchestrator is a convenience layer for CLI/SDK usage outside of Claude Code.
 
 ---
 
@@ -12,8 +14,8 @@ This document defines the core engineering standards and architectural philosoph
 
 | Don't | Why |
 |-------|-----|
-| **Build an Agent runtime** | Claude Code / Cursor are already the best ReAct runtimes |
-| **Write orchestration code** | L1 (Claude Code) makes all routing decisions via AI model |
+| **Replace host Agent runtimes** | Claude Code / Cursor are already the best ReAct runtimes |
+| **Hardcode workflow in Personas** | L1 decides execution order via AI model |
 | **Create custom protocols** | MCP is the standard tool protocol; we use it, don't replace it |
 | **Prescribe workflows in Personas** | "Do A then B" violates decentralization; let L1 decide order |
 | **Build message queues or routers** | L1 reads `[next_action]` and decides; no middleware needed |
@@ -114,11 +116,42 @@ This document defines the core engineering standards and architectural philosoph
 
 ---
 
+## Current Project Layout
+
+```
+agents/
+  yangjian.md, nezha.md, wanglingguan.md, taibai.md, jinzha.md   ← L3 Persona 定义
+
+skills/tool_*/
+  SKILL.md + scripts/                                             ← L3 Skill 定义
+
+mcp-servers/
+  taibai_server.py, tianyan_server.py, ...                        ← MCP Server（L2 工具层）
+
+src/agents_develop/                                               ← Python 包（可选 L1 编排层）
+  orchestrator.py     ← 管线编排（investigate → fix → review）
+  skill_bridge.py     ← 关键词路由注册表（9 个 Skill）
+  agents/             ← SubAgent 实现（investigator, fixer, reviewer, documenter）
+  tools/              ← 工具封装（code_analysis, security_scan, code_modification, doc_tools）
+  schemas.py          ← Pydantic I/O + AgentHandoff + TokenBudget + TracingSpan
+
+a2a_inbox/review_tickets/                                         ← Agent-to-Agent 审查工单
+tools/create_persona.py                                           ← Persona 模板生成器
+```
+
+**两种使用方式：**
+
+1. **在 Claude Code 中使用**：Claude Code 作为 L1 Runtime，直接读取 `agents/*.md` 和 `skills/tool_*/SKILL.md`，通过 Capability Registry 自主路由
+2. **独立 CLI/SDK 使用**：通过 `agents` CLI 命令或 Python SDK 调用 Orchestrator 编排层
+
+---
+
 ## Conclusion for Contributors
 
 When working on this project:
-1. **Never** write runtime orchestration code — L1 (Claude Code) handles routing.
-2. **Never** put workflow steps in Personas — describe behavior, not sequence.
-3. **Always** use the Creator tool for new Personas — ensures format compliance.
-4. **Always** write unit tests for new Skills — ensures deterministic execution.
-5. **Always** use capability-based descriptions in `[next_action]` — enables hot-swapping.
+1. **Persona/Skill 层**：不写运行时编排逻辑 — Personas 和 Skills 保持解耦，供 L1 Runtime 自由路由
+2. **Orchestrator 层**（可选）：`src/agents_develop/` 中的编排代码是 CLI/SDK 便利层，不影响 L3 Config 的使用方式
+3. **Never** put workflow steps in Personas — describe behavior, not sequence.
+4. **Always** use the Creator tool for new Personas — ensures format compliance.
+5. **Always** write unit tests for new Skills — ensures deterministic execution.
+6. **Always** use capability-based descriptions in `[next_action]` — enables hot-swapping.
