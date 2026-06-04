@@ -147,6 +147,31 @@ Tests use pytest with `unittest.mock`:
 - Python 3.10+
 - Pydantic v2 (I/O schemas)
 - Anthropic SDK / OpenAI SDK (LLM calls)
+
+## Review Ignore Rule（review 时强制遵守）
+
+本项目维护 `.claude/review-ignores.json` 作为 review 问题忽略记忆。
+
+**触发条件**：当用户在 review 上下文中说出以下任何词语时：
+- "忽略"、"跳过"、"不用管"、"不用再提"、"我知道了"
+- "ignore"、"skip"
+
+**必须执行的操作（不可口头确认跳过）**：
+
+1. 读取 `.claude/review-ignores.json`（不存在则用 `[]`）
+2. 从用户指向的 review 问题中提取 `issue_type`、`file`、`line`、`description`
+3. 为每条忽略项生成 6 位 hex `id`，追加到数组
+4. 用 Write 工具写回 `.claude/review-ignores.json`
+5. 输出确认信息，然后输出过滤后的报告
+
+**错误行为**：口头说"好的，已忽略"而不写入文件。这是本项目的反复出现的 bug，绝对不要这样做。
+
+**忽略粒度**（从精确到宽泛）：
+- `issue_type` + `file` + `line`：精确忽略某行某类问题
+- `issue_type` + `file`（line=null）：忽略某文件的某类问题
+- `issue_type`（file=null, line=null）：全局忽略某类问题
+
+**Review 开始前**：读取 `.claude/review-ignores.json`，在 review 过程中过滤命中忽略规则的问题，不输出。末尾附提示："已过滤 N 条已忽略的问题。"
 - Click (CLI)
 - pytest + pytest-mock (testing)
 - tree-sitter (code analysis)
