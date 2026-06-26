@@ -1,0 +1,7 @@
+{
+  "skills": ["{{name}}"],
+  "mcpServers": {{mcp_config}},
+  "cursorRules": {
+    "include": ["{{name}}"]
+  }
+}

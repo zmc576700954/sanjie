@@ -1,0 +1,29 @@
+[project]
+name = "agents-develop"
+version = "0.1.0"
+description = "Multi-tool agent/skill development environment with format migration"
+requires-python = ">=3.10"
+dependencies = [
+    "jinja2>=3.1",
+    "jsonschema>=4.0",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=0.9"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.1"]
+
+[project.scripts]
+agents-dev = "cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["core*", "cli*", "migration*", "formats*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

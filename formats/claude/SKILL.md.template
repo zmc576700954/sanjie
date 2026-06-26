@@ -1,0 +1,21 @@
+---
+name: {{name}}
+description: {{description}}
+version: {{version}}
+---
+
+# {{name}}
+
+{{description}}
+
+## When to Use
+{{when_to_use}}
+
+## Instructions
+{{instructions}}
+
+## Checklist
+{{checklist}}
+
+## Examples
+{{examples}}

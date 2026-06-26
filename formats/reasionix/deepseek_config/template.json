@@ -1,0 +1,11 @@
+{
+  "name": "{{name}}",
+  "type": "script",
+  "model": "deepseek",
+  "optimizations": {
+    "chunked_prompts": true,
+    "max_context_tokens": 32000,
+    "temperature": 0.1
+  },
+  "dependencies": {{core_dependencies}}
+}

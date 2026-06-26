@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "{{name}}": {
+      "command": "python",
+      "args": ["path/to/{{name}}_server.py"],
+      "transport": "{{mcp_transport}}"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+"""Example component -- core implementation."""

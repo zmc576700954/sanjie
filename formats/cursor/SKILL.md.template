@@ -1,0 +1,19 @@
+---
+name: {{name}}
+description: {{description}}
+version: {{version}}
+cursorVersion: ">=0.40"
+---
+
+# {{name}}
+
+{{description}}
+
+## Instructions
+{{instructions}}
+
+## Tools
+{{tools}}
+
+## Examples
+{{examples}}

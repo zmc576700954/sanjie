@@ -1,0 +1,26 @@
+{
+  "name": "example_skill",
+  "type": "skill",
+  "version": "1.0.0",
+  "description": "Example skill that demonstrates the component architecture",
+  "author": "agents_develop",
+  "created": "2025-06-25",
+  "updated": "2025-06-25",
+  "tags": ["example", "demo", "template"],
+  "core_dependencies": [],
+  "supported_tools": ["claude", "zcode", "mcp"],
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "message": {
+        "type": "string",
+        "description": "The message to process"
+      }
+    },
+    "required": ["message"]
+  },
+  "mcp_config": {
+    "transport": "stdio",
+    "tools": ["example_skill_run"]
+  }
+}

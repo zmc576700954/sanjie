@@ -1,0 +1,7 @@
+{
+  "name": "{{name}}",
+  "description": "{{description}}",
+  "type": "command",
+  "arguments": {{config_schema}},
+  "dependencies": {{core_dependencies}}
+}

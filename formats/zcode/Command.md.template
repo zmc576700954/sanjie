@@ -1,0 +1,16 @@
+# {{name}}
+
+{{description}}
+
+## Usage
+
+/{{name}} [arguments]
+
+## Instructions
+{{instructions}}
+
+## Checklist
+{{checklist}}
+
+## Examples
+{{examples}}
