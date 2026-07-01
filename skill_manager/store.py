@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+import shutil
+
 from skill_manager.errors import StorageError
 from skill_manager.models import ProjectOverride, PromptFragment, Skill, TriggerRule
 
@@ -140,11 +142,12 @@ class FileSystemStore(SkillStore):
             raise StorageError(f"Failed to write skill {skill.name}: {exc}") from exc
 
     def delete_skill(self, name: str) -> None:
-        import shutil
-
         skill_dir = self._skill_dir(name)
         if skill_dir.exists():
-            shutil.rmtree(skill_dir)
+            try:
+                shutil.rmtree(skill_dir)
+            except OSError as exc:
+                raise StorageError(f"Failed to delete skill {name}: {exc}") from exc
 
     def list_fragments(self, skill_name: str, filters: dict | None = None) -> list[PromptFragment]:
         filters = filters or {}
@@ -168,13 +171,16 @@ class FileSystemStore(SkillStore):
 
     def _load_fragment(self, path: Path, skill_name: str) -> PromptFragment | None:
         meta_path = path.with_suffix(".json")
-        content = path.read_text(encoding="utf-8")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise StorageError(f"Failed to read fragment content from {path}: {exc}") from exc
         meta: dict[str, Any] = {}
         if meta_path.exists():
             try:
                 meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                meta = {}
+            except (json.JSONDecodeError, OSError) as exc:
+                raise StorageError(f"Failed to read fragment metadata from {meta_path}: {exc}") from exc
 
         return PromptFragment(
             id=meta.get("id", path.stem),
@@ -216,7 +222,10 @@ class FileSystemStore(SkillStore):
             for ext in (".md", ".json"):
                 candidate = fragments_dir / f"{fragment_id}{ext}"
                 if candidate.exists():
-                    candidate.unlink()
+                    try:
+                        candidate.unlink()
+                    except OSError as exc:
+                        raise StorageError(f"Failed to delete fragment {fragment_id}: {exc}") from exc
 
     def list_project_overrides(self, project_path: str) -> list[ProjectOverride]:
         override_dir = self._override_dir(project_path)
