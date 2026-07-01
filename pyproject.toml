@@ -12,14 +12,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=0.9"]
+mcp = ["mcp>=1.0"]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.1"]
 
 [project.scripts]
 agents-dev = "cli.main:main"
+skill-manager = "skill_manager.main:main"
 
 [tool.setuptools.packages.find]
-include = ["core*", "cli*", "migration*", "formats*"]
+include = ["core*", "cli*", "migration*", "formats*", "skill_manager*"]
 
 [tool.ruff]
 line-length = 100

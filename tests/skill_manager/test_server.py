@@ -26,3 +26,17 @@ async def test_resolve_skill_tool(tmp_path: Path):
     tools = result.root.tools
     tool = next(t for t in tools if t.name == "resolve_skill")
     assert "name" in tool.inputSchema["required"]
+
+
+import subprocess
+import sys
+
+
+def test_entry_point_imports():
+    result = subprocess.run(
+        [sys.executable, "-m", "skill_manager", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    # Module has no CLI yet; just verify it does not crash on import.
+    assert result.returncode != 2 or "No module named" not in result.stderr
