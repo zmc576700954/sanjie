@@ -20,7 +20,7 @@ agents-dev = "cli.main:main"
 skill-manager = "skill_manager.main:main"
 
 [tool.setuptools.packages.find]
-include = ["core*", "cli*", "migration*", "formats*", "skill_manager*"]
+include = ["core*", "cli*", "migration*", "formats*", "skill_manager*", "agents_dev*"]
 
 [tool.ruff]
 line-length = 100
