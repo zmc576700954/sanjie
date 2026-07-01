@@ -36,6 +36,7 @@ class PromptFragment:
     priority: int = 0
     content: str = ""
     is_required: bool = False
+    """If True, the fragment is always included in the assembled prompt, regardless of match score."""
 
     def match_score(self, language: str | None = None, action: str | None = None, trigger: str | None = None) -> int:
         score = 0

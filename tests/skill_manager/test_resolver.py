@@ -67,3 +67,47 @@ def test_project_override_wins(tmp_path: Path):
     result = resolver.resolve("code_review", project_path=str(tmp_path))
 
     assert "Project override." in result.prompt
+
+
+def test_is_required_always_included(tmp_path: Path):
+    store = FileSystemStore(str(tmp_path))
+    store.save_skill(Skill(name="code_review", description="Review", version="1.0.0", base_prompt="Base prompt."))
+    store.save_fragment(PromptFragment(
+        id="required_frag",
+        skill_name="code_review",
+        language="java",  # different from query context
+        content="Always include this.",
+        is_required=True,
+    ))
+
+    resolver = PriorityResolver(store)
+    # Pass language=python, but fragment is for java — without is_required it would be filtered out
+    result = resolver.resolve("code_review", language="python")
+
+    assert "Always include this." in result.prompt
+    assert "required_frag" in result.fragments_applied
+
+
+def test_fallback_used_when_no_fragments_match_with_all_context(tmp_path: Path):
+    store = FileSystemStore(str(tmp_path))
+    store.save_skill(Skill(
+        name="code_review",
+        description="Review",
+        version="1.0.0",
+        base_prompt="Base prompt.",
+        default_action="self_review",
+        triggers=[TriggerRule(type="slash", value="/review", action="self_review")],
+    ))
+    store.save_fragment(PromptFragment(
+        id="py",
+        skill_name="code_review",
+        language="python",
+        content="Python specific.",
+    ))
+
+    resolver = PriorityResolver(store)
+    # Provide all context but nothing matches (language=java, action=other, trigger=/other)
+    result = resolver.resolve("code_review", language="java", action="other", trigger="/other")
+
+    assert result.prompt == "Base prompt."
+    assert result.fallback_used is True

@@ -39,7 +39,11 @@ class PriorityResolver:
 
         # Group by match score and collect in priority order
         score_buckets: dict[int, list[PromptFragment]] = {}
+        required_fragments: list[PromptFragment] = []
         for fragment in skill_fragments:
+            if fragment.is_required:
+                required_fragments.append(fragment)
+                continue
             score = fragment.match_score(language=language, action=action, trigger=trigger)
             if score == 0:
                 continue
@@ -48,6 +52,9 @@ class PriorityResolver:
         for score in sorted(score_buckets.keys(), reverse=True):
             bucket = sorted(score_buckets[score], key=lambda f: f.priority, reverse=True)
             fragments.extend(bucket)
+
+        # Append required fragments after scored ones
+        fragments.extend(required_fragments)
 
         # Deduplicate by id while preserving order
         seen: set[str] = set()
@@ -58,7 +65,7 @@ class PriorityResolver:
             seen.add(fragment.id)
             unique_fragments.append(fragment)
 
-        fallback_used = not unique_fragments and (language is None or action is None or trigger is None)
+        fallback_used = not unique_fragments
 
         parts = [skill.base_prompt.strip()]
         for fragment in unique_fragments:
