@@ -1,0 +1,27 @@
+{
+  "name": "dochub",
+  "type": "skill",
+  "version": "1.0.0",
+  "description": "Team knowledge base for managing Markdown documents, contributor addendums, and AI-powered search via MCP.",
+  "author": "",
+  "created": "2026-06-26",
+  "updated": "2026-06-26",
+  "tags": ["docs", "knowledge-base", "search", "mcp"],
+  "core_dependencies": ["markdown>=3.5", "python-frontmatter>=1.0", "pyyaml>=6.0"],
+  "supported_tools": ["claude", "cursor", "zcode", "mcp"],
+  "config_schema": {},
+  "when_to_use": "Use dochub when you need to query, search, or update the team's local knowledge base. It supports keyword/semantic/hybrid search, RAG-style question answering, and contributor addendums.",
+  "mcp_config": {
+    "transport": "stdio",
+    "command": ["agents-dev", "docs", "serve", "--config", "./dochub.yaml"],
+    "tools": [
+      "doc_search",
+      "doc_query",
+      "doc_read",
+      "doc_create",
+      "doc_update_master",
+      "doc_add_addendum",
+      "doc_index_status"
+    ]
+  }
+}

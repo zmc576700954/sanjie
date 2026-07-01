@@ -1,0 +1,12 @@
+{
+  "skills": ["dochub"],
+  "mcpServers": {
+    "dochub": {
+      "command": ["agents-dev", "docs", "serve", "--config", "./dochub.yaml"],
+      "transport": "stdio"
+    }
+  },
+  "cursorRules": {
+    "include": ["dochub"]
+  }
+}

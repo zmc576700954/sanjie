@@ -1,0 +1,7 @@
+{
+  "name": "dochub",
+  "description": "Team knowledge base for managing Markdown documents, contributor addendums, and AI-powered search via MCP.",
+  "type": "command",
+  "arguments": {},
+  "dependencies": ["markdown>=3.5", "python-frontmatter>=1.0", "pyyaml>=6.0"]
+}
