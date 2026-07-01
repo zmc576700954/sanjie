@@ -1,0 +1,8 @@
+{
+  "id": "python",
+  "language": "python",
+  "action": null,
+  "trigger": null,
+  "priority": 0,
+  "is_required": false
+}

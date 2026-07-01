@@ -1,0 +1,18 @@
+{
+  "name": "code_review",
+  "description": "Review code for quality, bugs, and style issues.",
+  "version": "1.0.0",
+  "default_action": "self_review",
+  "supported_languages": ["python", "typescript", "go", "javascript", "rust", "java", "*"],
+  "tags": ["review", "quality"],
+  "triggers": [
+    {"type": "slash", "value": "/review", "action": "self_review"},
+    {"type": "slash", "value": "/review-python", "action": "self_review", "language_hint": "python"},
+    {"type": "slash", "value": "/review-go", "action": "self_review", "language_hint": "go"},
+    {"type": "slash", "value": "/review-ts", "action": "self_review", "language_hint": "typescript"},
+    {"type": "keyword", "value": "review this code", "action": "self_review"},
+    {"type": "event", "value": "on_save", "action": "quick_review"}
+  ],
+  "created_at": "2026-06-26",
+  "updated_at": "2026-06-26"
+}
