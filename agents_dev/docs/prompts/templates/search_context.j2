@@ -1,0 +1,12 @@
+{% if query %}用户问题：{{ query }}
+
+{% endif %}以下是知识库中检索到的相关文档片段：
+{% for chunk in chunks %}
+---
+[来源] {{ chunk.doc_title }}
+[类型] {{ chunk.doc_type }}
+{% if chunk.contributor %}[贡献者] {{ chunk.contributor }}{% else %}[作者] {{ chunk.author }}{% endif %}
+{% if chunk.session_id %}[会话] {{ chunk.session_id }}{% endif %}
+{% if chunk.heading_path %}[路径] {{ chunk.heading_path | join(' > ') }}{% endif %}
+{{ chunk.content }}
+{% endfor %}
