@@ -22,12 +22,17 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+import hashlib
+import re
+
+
 def _to_doc_id(title: str) -> str:
-    return "_".join(
-        part.lower()
-        for part in title.replace("-", " ").replace("_", " ").split()
-        if part.isalnum() or part
-    )
+    normalized = re.sub(r"[\s\-]+", "_", title.lower())
+    normalized = re.sub(r"[^a-z0-9_\-]", "", normalized)
+    normalized = re.sub(r"_{2,}", "_", normalized).strip("_")
+    if not normalized:
+        return f"doc_{hashlib.md5(title.encode('utf-8')).hexdigest()[:8]}"
+    return normalized
 
 
 class DocHubTool(ToolBase):

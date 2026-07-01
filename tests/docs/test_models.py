@@ -1,6 +1,6 @@
 """Tests for DocHub data models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -22,8 +22,8 @@ def test_master_document_requires_valid_doc_type():
             title="Bad Type",
             author="alice",
             doc_type="essay",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             content_path=Path("docs/master/bad_type.md"),
         )
 
@@ -34,8 +34,8 @@ def test_addendum_parent_doc_id_matches_doc_id():
         parent_doc_id="api_deploy",
         contributor="bob",
         summary="Docker deploy notes",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
         content_path=Path("docs/addendums/api_deploy.bob.md"),
     )
     assert addendum.addendum_id == "api_deploy.bob"

@@ -1,6 +1,6 @@
 """Tests for DocumentStore."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -22,8 +22,8 @@ def test_create_and_get_master(tmp_store):
         author="alice",
         doc_type="how-to",
         tags=["api"],
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
         content_path=tmp_store.docs_path / "master" / "api_deploy.md",
     )
     created = tmp_store.create_master(master, "Run pytest.")
@@ -40,8 +40,8 @@ def test_update_master_appends_delta(tmp_store):
         title="API Deploy",
         author="alice",
         doc_type="how-to",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
         content_path=tmp_store.docs_path / "master" / "api_deploy.md",
     )
     tmp_store.create_master(master, "Run pytest.")
@@ -56,8 +56,8 @@ def test_create_addendum(tmp_store):
         title="API Deploy",
         author="alice",
         doc_type="how-to",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
         content_path=tmp_store.docs_path / "master" / "api_deploy.md",
     )
     tmp_store.create_master(master, "Run pytest.")

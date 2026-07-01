@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 
 
 class PromptRenderer:
@@ -14,7 +14,6 @@ class PromptRenderer:
     def __init__(self, templates_path: Path) -> None:
         self.env = Environment(
             loader=FileSystemLoader(str(templates_path)),
-            autoescape=select_autoescape(),
             trim_blocks=True,
             lstrip_blocks=True,
         )

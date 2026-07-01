@@ -150,3 +150,10 @@ def serve_cmd(config: str, transport: str) -> None:
     from agents_dev.docs.mcp.server import DocHubMCPServer
     server = DocHubMCPServer(cfg)
     console.print(f"Server info: {server.get_server_info()}")
+    console.print(
+        "[yellow]DocHub MCP server is ready.[/yellow]\n"
+        "The server exposes tools via the MCP protocol. In a production setup,\n"
+        "this would run as a long-lived stdio or SSE transport process.\n"
+        "For now, use the generated MCP format files (see formats/dochub/) to\n"
+        "wire the server into your MCP client."
+    )

@@ -27,22 +27,24 @@ class MarkdownChunker:
         sections = self._split_by_headings(content)
         chunks: List[DocChunk] = []
         for heading_path, section_text in sections:
-            chunk_id = f"{master.doc_id}_{uuid.uuid4().hex[:8]}"
-            chunks.append(
-                DocChunk(
-                    chunk_id=chunk_id,
-                    doc_id=master.doc_id,
-                    doc_title=master.title,
-                    doc_type=master.doc_type,
-                    author=master.author,
-                    contributor=None,
-                    session_id=master.session_id,
-                    tags=master.tags,
-                    heading_path=heading_path,
-                    content=section_text.strip(),
-                    source_path=master.content_path,
+            section_chunks = self._split_into_size_chunks(section_text)
+            for chunk_text in section_chunks:
+                chunk_id = f"{master.doc_id}_{uuid.uuid4().hex[:8]}"
+                chunks.append(
+                    DocChunk(
+                        chunk_id=chunk_id,
+                        doc_id=master.doc_id,
+                        doc_title=master.title,
+                        doc_type=master.doc_type,
+                        author=master.author,
+                        contributor=None,
+                        session_id=master.session_id,
+                        tags=master.tags,
+                        heading_path=heading_path,
+                        content=chunk_text.strip(),
+                        source_path=master.content_path,
+                    )
                 )
-            )
         return chunks
 
     def chunk_addendum(
@@ -70,11 +72,15 @@ class MarkdownChunker:
         ]
 
     def _split_by_headings(self, content: str) -> List[tuple[List[str], str]]:
-        """Split Markdown into (heading_path, section_text) pairs."""
+        """Split Markdown into (heading_path, section_text) pairs.
+
+        Skips heading detection inside fenced code blocks.
+        """
         lines = content.splitlines()
         sections: List[tuple[List[str], str]] = []
         current_path: List[str] = []
         current_lines: List[str] = []
+        in_code_block = False
 
         def flush() -> None:
             if current_lines:
@@ -82,18 +88,54 @@ class MarkdownChunker:
                 current_lines.clear()
 
         for line in lines:
-            match = re.match(r"^(#{1,6})\s+(.+)$", line)
-            if match:
-                flush()
-                level = len(match.group(1))
-                title = match.group(2).strip()
-                current_path = current_path[: level - 1]
-                current_path.append(title)
-            else:
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
                 current_lines.append(line)
+                continue
+            if not in_code_block:
+                match = re.match(r"^(#{1,6})\s+(.+)$", line)
+                if match:
+                    flush()
+                    level = len(match.group(1))
+                    title = match.group(2).strip()
+                    current_path = current_path[: level - 1]
+                    current_path.append(title)
+                    continue
+            current_lines.append(line)
         flush()
 
         if not sections:
             sections.append(([], content))
 
         return sections
+
+    def _split_into_size_chunks(self, text: str) -> List[str]:
+        """Split text into chunks of at most size characters with overlap."""
+        if not text:
+            return []
+        if len(text) <= self.size:
+            return [text]
+
+        chunks: List[str] = []
+        start = 0
+        while start < len(text):
+            end = min(start + self.size, len(text))
+            if end < len(text):
+                # Try to break at a newline or space for cleaner splits
+                nl_pos = text.rfind("\n", start, end)
+                if nl_pos > start:
+                    end = nl_pos + 1
+                else:
+                    space_pos = text.rfind(" ", start, end)
+                    if space_pos > start:
+                        end = space_pos + 1
+            chunks.append(text[start:end])
+            if end >= len(text):
+                break
+            start = end - self.overlap
+            if start < 0:
+                start = 0
+            if start >= len(text):
+                break
+        return chunks

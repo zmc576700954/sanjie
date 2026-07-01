@@ -7,7 +7,7 @@ import pytest
 
 from agents_dev.docs.config import DocHubConfig
 from agents_dev.docs.mcp.server import DocHubMCPServer
-from agents_dev.docs.mcp.tools import DocHubTool
+from agents_dev.docs.mcp.tools import DocHubTool, _to_doc_id
 from agents_dev.docs.models import MasterDocument
 
 
@@ -57,3 +57,21 @@ def test_doc_addendum(tool):
     })
     master = tool.run("doc_read", {"doc_id": "api_deploy"})
     assert "bob" in master["addendums"]
+
+
+def test_to_doc_id_ascii():
+    assert _to_doc_id("API Deploy") == "api_deploy"
+    assert _to_doc_id("My-Document") == "my_document"
+    assert _to_doc_id("My_Document") == "my_document"
+
+
+def test_to_doc_id_chinese():
+    doc_id = _to_doc_id("部署指南")
+    assert doc_id.startswith("doc_")
+    assert len(doc_id) > 4
+
+
+def test_to_doc_id_mixed():
+    doc_id = _to_doc_id("API 部署指南")
+    assert "api" in doc_id
+    assert doc_id.startswith("api_") or doc_id == "api"
