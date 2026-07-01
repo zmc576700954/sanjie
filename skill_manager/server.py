@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
+
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 
-from skill_manager.errors import SkillNotFoundError
+from skill_manager.errors import FragmentNotFoundError, SkillNotFoundError
 from skill_manager.language import HeuristicLanguageDetector
 from skill_manager.resolver import PriorityResolver
 from skill_manager.store import SkillStore
@@ -42,6 +44,7 @@ def create_server(store: SkillStore) -> Server:
                         "action": {"type": "string"},
                         "trigger": {"type": "string"},
                         "project_path": {"type": "string"},
+                        "file_path": {"type": "string"},
                     },
                     "required": ["name"],
                 },
@@ -101,6 +104,13 @@ def create_server(store: SkillStore) -> Server:
     async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         if name == "list_skills":
             filters = {k: v for k, v in arguments.items() if v is not None}
+            # Map filter keys to internal names
+            key_map = {
+                "filter_language": "language",
+                "filter_action": "action",
+                "filter_tag": "tag",
+            }
+            filters = {key_map.get(k, k): v for k, v in filters.items()}
             skills = store.list_skills(filters)
             payload = [
                 {
@@ -112,7 +122,7 @@ def create_server(store: SkillStore) -> Server:
                 }
                 for s in skills
             ]
-            return [TextContent(type="text", text=str(payload))]
+            return [TextContent(type="text", text=json.dumps(payload))]
 
         if name == "resolve_skill":
             skill_name = arguments["name"]
@@ -140,7 +150,7 @@ def create_server(store: SkillStore) -> Server:
                 trigger=trigger,
                 project_path=project_path,
             )
-            return [TextContent(type="text", text=str(result.to_dict()))]
+            return [TextContent(type="text", text=json.dumps(result.to_dict()))]
 
         if name == "detect_language":
             result = language_detector.detect(
@@ -148,7 +158,7 @@ def create_server(store: SkillStore) -> Server:
                 arguments.get("file_path"),
                 arguments.get("explicit_language"),
             )
-            return [TextContent(type="text", text=str({
+            return [TextContent(type="text", text=json.dumps({
                 "primary_language": result.primary_language,
                 "confidence": result.confidence,
                 "secondary_languages": result.secondary_languages,
@@ -158,7 +168,12 @@ def create_server(store: SkillStore) -> Server:
         if name == "register_skill":
             from skill_manager.models import Skill, TriggerRule
 
-            metadata = arguments["metadata"]
+            metadata = arguments.get("metadata", {})
+            if "name" not in metadata:
+                return [TextContent(type="text", text="Error: metadata must contain 'name'.")]
+            if "base_prompt" not in arguments:
+                return [TextContent(type="text", text="Error: arguments must contain 'base_prompt'.")]
+
             skill = Skill(
                 name=metadata["name"],
                 description=metadata.get("description", ""),
@@ -191,8 +206,13 @@ def create_server(store: SkillStore) -> Server:
         if name == "update_fragment":
             from skill_manager.models import PromptFragment
 
-            skill_name = arguments["skill_name"]
-            fragment_data = arguments["fragment"]
+            skill_name = arguments.get("skill_name", "")
+            fragment_data = arguments.get("fragment", {})
+            if "id" not in fragment_data:
+                return [TextContent(type="text", text="Error: fragment must contain 'id'.")]
+            if "content" not in fragment_data:
+                return [TextContent(type="text", text="Error: fragment must contain 'content'.")]
+
             fragment = PromptFragment(
                 id=fragment_data["id"],
                 skill_name=skill_name,
@@ -214,7 +234,7 @@ def create_server(store: SkillStore) -> Server:
             skill = store.get_skill(skill_name)
             if skill is None:
                 raise SkillNotFoundError(f"Skill '{skill_name}' not found")
-            skill.triggers.append(TriggerRule(**trigger_data))
+            skill.triggers = skill.triggers + [TriggerRule(**trigger_data)]
             store.save_skill(skill)
             return [TextContent(type="text", text=f"Trigger registered for '{skill_name}'.")]
 

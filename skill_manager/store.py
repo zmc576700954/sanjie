@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from abc import ABC, abstractmethod
@@ -8,7 +9,7 @@ from typing import Any
 
 import shutil
 
-from skill_manager.errors import StorageError
+from skill_manager.errors import FragmentNotFoundError, StorageError
 from skill_manager.models import ProjectOverride, PromptFragment, Skill, TriggerRule
 
 
@@ -67,7 +68,8 @@ class FileSystemStore(SkillStore):
 
     @staticmethod
     def _project_key(project_path: str) -> str:
-        return str(hash(os.path.normpath(project_path)))
+        path = os.path.normpath(project_path)
+        return hashlib.sha256(path.encode()).hexdigest()[:16]
 
     def list_skills(self, filters: dict | None = None) -> list[Skill]:
         filters = filters or {}
@@ -216,7 +218,6 @@ class FileSystemStore(SkillStore):
             raise StorageError(f"Failed to write fragment {fragment.id}: {exc}") from exc
 
     def delete_fragment(self, fragment_id: str) -> None:
-        # Fragment deletion requires skill_name context; this base method is intentionally broad.
         for skill_dir in self.skills_dir.iterdir():
             fragments_dir = skill_dir / "fragments"
             for ext in (".md", ".json"):
@@ -226,6 +227,8 @@ class FileSystemStore(SkillStore):
                         candidate.unlink()
                     except OSError as exc:
                         raise StorageError(f"Failed to delete fragment {fragment_id}: {exc}") from exc
+                    return
+        raise FragmentNotFoundError(fragment_id)
 
     def list_project_overrides(self, project_path: str) -> list[ProjectOverride]:
         override_dir = self._override_dir(project_path)

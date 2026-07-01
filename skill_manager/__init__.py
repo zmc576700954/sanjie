@@ -1,0 +1,1 @@
+"""MCP Skill Manager package."""

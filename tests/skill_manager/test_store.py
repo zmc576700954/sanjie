@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from skill_manager.builtin_skills import load_builtin_skills
-from skill_manager.errors import StorageError
+from skill_manager.errors import FragmentNotFoundError, StorageError
 from skill_manager.models import Skill, PromptFragment
 from skill_manager.store import FileSystemStore
 
@@ -85,6 +85,15 @@ def test_delete_fragment_raises_storage_error_on_permission_denied(tmp_path: Pat
         store.delete_fragment("frag1")
 
 
+def test_delete_fragment_raises_fragment_not_found(tmp_path: Path):
+    store = FileSystemStore(str(tmp_path))
+    skill = Skill(name="test_skill", description="Test", version="1.0.0", base_prompt="Base")
+    store.save_skill(skill)
+
+    with pytest.raises(FragmentNotFoundError):
+        store.delete_fragment("nonexistent")
+
+
 def test_delete_skill_raises_storage_error_on_permission_denied(tmp_path: Path, monkeypatch):
     store = FileSystemStore(str(tmp_path))
     skill = Skill(name="test_skill", description="Test", version="1.0.0", base_prompt="Base")
@@ -99,6 +108,14 @@ def test_delete_skill_raises_storage_error_on_permission_denied(tmp_path: Path, 
 
     with pytest.raises(StorageError, match="Failed to delete skill"):
         store.delete_skill("test_skill")
+
+
+def test_project_key_is_deterministic(tmp_path: Path):
+    store = FileSystemStore(str(tmp_path))
+    key1 = store._project_key("/some/project/path")
+    key2 = store._project_key("/some/project/path")
+    assert key1 == key2
+    assert len(key1) == 16
 
 
 def test_load_builtin_skills(tmp_path: Path):
