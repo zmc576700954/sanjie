@@ -139,21 +139,14 @@ def ask_cmd(question: str, session_id: Optional[str], config: str) -> None:
 
 
 @docs_cmd.command("serve")
-@click.option("--config", "-c", default=".", help="Path to DocHub base directory")
+@click.option("--config", "-c", default=".", help="Path to DocHub base directory or dochub.yaml")
 @click.option("--transport", default="stdio", type=click.Choice(["stdio"]))
 def serve_cmd(config: str, transport: str) -> None:
-    """Start the DocHub MCP server."""
-    cfg = _load_config(config)
+    """Start the DocHub MCP server over stdio transport."""
     if transport != "stdio":
         raise click.ClickException("Only stdio transport is supported")
-    console.print(f"[green]Starting DocHub MCP server[/green] ({cfg.base_path})")
-    from agents_dev.docs.mcp.server import DocHubMCPServer
-    server = DocHubMCPServer(cfg)
-    console.print(f"Server info: {server.get_server_info()}")
-    console.print(
-        "[yellow]DocHub MCP server is ready.[/yellow]\n"
-        "The server exposes tools via the MCP protocol. In a production setup,\n"
-        "this would run as a long-lived stdio or SSE transport process.\n"
-        "For now, use the generated MCP format files (see formats/dochub/) to\n"
-        "wire the server into your MCP client."
-    )
+
+    from agents_dev.docs.mcp.stdio_server import serve_from_path
+
+    config_path = Path(config)
+    serve_from_path(config_path)

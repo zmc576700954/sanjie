@@ -2,7 +2,8 @@
   "skills": ["dochub"],
   "mcpServers": {
     "dochub": {
-      "command": ["agents-dev", "docs", "serve", "--config", "./dochub.yaml"],
+      "command": "agents-dev",
+      "args": ["docs", "serve", "--config", "./dochub.yaml"],
       "transport": "stdio"
     }
   },

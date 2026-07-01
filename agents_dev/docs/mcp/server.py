@@ -1,4 +1,9 @@
-"""DocHub MCP server implementation."""
+"""DocHub MCP server implementation.
+
+This module keeps the project-specific ``DocHubMCPServer`` class for
+compatibility with ``core.mcp_base.server.MCPServerBase``. For actually
+running a DocHub MCP server, use ``agents_dev.docs.mcp.stdio_server``.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,13 @@ from agents_dev.docs.mcp.tools import DocHubTool
 
 
 class DocHubMCPServer(MCPServerBase):
-    """MCP server that exposes DocHub document management and search tools."""
+    """MCP server that exposes DocHub document management and search tools.
+
+    This class implements the project's ``MCPServerBase`` contract. It is
+    useful for in-process composition and testing, but it does not provide
+    a transport layer. To run a real MCP server, see
+    ``agents_dev.docs.mcp.stdio_server``.
+    """
 
     def __init__(self, config: DocHubConfig) -> None:
         super().__init__(name="dochub", version="1.0.0")
